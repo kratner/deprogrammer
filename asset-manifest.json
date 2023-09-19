@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/deprogrammer/static/css/main.3523df93.css",
-    "main.js": "/deprogrammer/static/js/main.bbd7c43d.js",
+    "main.css": "/deprogrammer/static/css/main.221a154e.css",
+    "main.js": "/deprogrammer/static/js/main.6910f792.js",
     "static/js/787.38f60c6c.chunk.js": "/deprogrammer/static/js/787.38f60c6c.chunk.js",
     "static/media/deprogrammer.svg": "/deprogrammer/static/media/deprogrammer.ef2ef3c1eb59668f4e628dac27c17bc0.svg",
     "index.html": "/deprogrammer/index.html",
-    "main.3523df93.css.map": "/deprogrammer/static/css/main.3523df93.css.map",
-    "main.bbd7c43d.js.map": "/deprogrammer/static/js/main.bbd7c43d.js.map",
+    "main.221a154e.css.map": "/deprogrammer/static/css/main.221a154e.css.map",
+    "main.6910f792.js.map": "/deprogrammer/static/js/main.6910f792.js.map",
     "787.38f60c6c.chunk.js.map": "/deprogrammer/static/js/787.38f60c6c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.3523df93.css",
-    "static/js/main.bbd7c43d.js"
+    "static/css/main.221a154e.css",
+    "static/js/main.6910f792.js"
   ]
 }
