@@ -1,0 +1,14 @@
+Step 1. **Use Strong Passwords:**
+Protect your online accounts with strong, unique passwords. Avoid using easily guessable information like birthdays or common words. Consider using a reputable password manager to generate and store complex passwords securely.
+
+Step 2. **Enable Two-Factor Authentication (2FA):**
+Whenever possible, enable 2FA for your online accounts. This extra layer of security requires a second form of verification, such as a code sent to your phone, in addition to your password.
+
+Step 3. **Beware of Phishing Emails:**
+Be cautious of unsolicited emails asking for personal information or urging you to click on links. Verify the sender's legitimacy and scrutinize the email's content for signs of phishing attempts.
+
+Step 4. **Check Website Security:**
+Before making online purchases or sharing sensitive information, verify that websites are secure. Look for "https://" in the URL and a padlock symbol in the address bar, indicating encrypted communication.
+
+Step 5. **Stay Informed About Common Scams:**
+Keep yourself informed about common online scams. Knowledge is your best defense. Be skeptical of offers that seem too good to be true, and consult official sources or consumer protection agencies for guidance on recognizing scams.

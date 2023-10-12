@@ -1,0 +1,79 @@
+html {
+  background-color: #111;
+  body {
+    color: #fff;
+    padding: 0.5em 1em;
+    .logo {
+      animation: pulse 3s ease 0s infinite normal none;
+      animation-iteration-count: 1;
+      padding: 0.5em 1.25em;
+      height: 12vh;
+      // width: 90%;
+    }
+    .tagline {
+      float: right;
+      padding: 1em 2em;
+      font-size: 4vh;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio (height/width) */
+      overflow: hidden;
+      margin-top: 2em;
+
+      .video-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+
+        iframe {
+          width: 100%;
+          height: 100%;
+        }
+      }
+    }
+
+    .header {
+      .logo {
+        float: right;
+      }
+    }
+
+    .footer {
+      ul {
+        list-style: none;
+        padding-left: 1em;
+      }
+      .nav {
+        float: left;
+        a {
+          font-size: 5vh;
+          text-decoration: none;
+          &:visited {
+            color: $base-font-visited-color;
+          }
+          &:hover {
+            color: $base-font-hover-color;
+            text-decoration: underline;
+          }
+        }
+      }
+      .logo {
+        float: right;
+      }
+    }
+  }
+}
+
+.popup-window {
+  button {
+    background: white;
+    border: none;
+    border-radius: 1em;
+    padding: 1em;
+    cursor: pointer;
+  }
+}

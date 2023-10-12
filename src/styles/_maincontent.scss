@@ -1,0 +1,32 @@
+/* Main component styles */
+.main {
+    // display: flex;
+    // flex-direction: row;
+  }
+  
+  /* Hamburger menu on the left */
+  .hamburger-menu-container.left {
+    padding-right: 16px; /* Add some space between the menu and the content */
+  }
+  
+  /* Content container */
+  .content-container {
+    flex: 1; /* Allow the content to take the remaining available width */
+    padding: 16px;
+  }
+  
+  /* Responsive styles */
+  @media screen and (max-width: 768px) {
+    .main {
+      flex-direction: column; /* On smaller screens, stack components vertically */
+    }
+  
+    .hamburger-menu-container.left {
+      padding-right: 0; /* Remove padding on the left for full-width menu on small screens */
+    }
+  
+    .content-container {
+      padding: 0; /* Remove padding on small screens for full-width content */
+    }
+  }
+  

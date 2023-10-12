@@ -1,0 +1,60 @@
+/* Styles for Hamburger Menu Container */
+.hamburger-menu-container {
+    position: relative;
+  }
+
+  .hamburger-menu {
+    background: #847e742e;
+    list-style: none;
+  }
+  
+  /* Styles for Hamburger Menu Button */
+  .hamburger-menu-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 20px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  .hamburger-menu-icon {
+    width: 30px;
+    height: 2px;
+    background-color: #fef4f4;
+  }
+  
+  /* Styles for Hamburger Menu in Left Position */
+  .hamburger-menu.left {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  
+  /* Styles for Hamburger Menu in Right Position */
+  .hamburger-menu.right {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  
+  /* Styles for Hamburger Menu Items */
+  .hamburger-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .hamburger-menu li {
+    padding: 8px 16px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+  }
+  
+  .hamburger-menu li:last-child {
+    border-bottom: none;
+  }
+  

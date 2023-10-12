@@ -1,0 +1,10 @@
+.post-list {
+  ul {
+    li {
+      list-style: none;
+      .wp-post-featured-image {
+        width: 100%;
+      }
+    }
+  }
+}
