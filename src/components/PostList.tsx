@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { styled } from "@mui/system";
+import { DateFormatters } from "../utils/DateFormatters";
 
 // Define the prop types for PostList
 interface PostListProps {
@@ -159,20 +160,35 @@ const PostList: React.FC<PostListProps> = ({
                         />
                       </a>
 
-                      <div dangerouslySetInnerHTML={{ __html: post.content }} />
-
-                      {/* <h3>Category: {post.categories.edges[0]?.node?.name}</h3> */}
-
                       <p dangerouslySetInnerHTML={{ __html: post.excerpt }}></p>
+                      <p>
+                        c: {DateFormatters.formatDate(post.date)} m:{" "}
+                        {DateFormatters.formatDate(post.modified)}
+                      </p>
+
+                      <CustomAccordion>
+                        <CustomAccordionSummary
+                          expandIcon={<CustomExpandMoreIcon />}
+                        >
+                          <p className="source-ling">Read the article...</p>
+                        </CustomAccordionSummary>
+                        <CustomAccordionDetails>
+                          <p
+                            dangerouslySetInnerHTML={{ __html: post.content }}
+                          ></p>
+                        </CustomAccordionDetails>
+                      </CustomAccordion>
                       <p className="source-link">
                         <a
                           href={graphqlUrl + post.uri}
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Read the article...
+                          Read the article on {trimmedUrl}
                         </a>
                       </p>
+
+                      {/* <h3>Category: {post.categories.edges[0]?.node?.name}</h3> */}
                     </CustomAccordionDetails>
                   </CustomAccordion>
                 </li>
