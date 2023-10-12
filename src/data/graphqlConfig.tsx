@@ -19,6 +19,7 @@ export const generateGraphqlQuery = (first: number, categoryName: string) => `
             }
           }
         }
+        date
         excerpt
         featuredImage {
           node {
@@ -26,6 +27,7 @@ export const generateGraphqlQuery = (first: number, categoryName: string) => `
             altText
           }
         }
+        modified
         uri
       }
     }

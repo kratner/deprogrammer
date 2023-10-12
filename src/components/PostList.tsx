@@ -28,6 +28,7 @@ interface Post {
       };
     }[];
   };
+  date: string;
   excerpt: string;
   featuredImage: {
     node: {
@@ -35,6 +36,7 @@ interface Post {
       altText: string;
     };
   };
+  modified: string;
   uri: string;
 }
 
