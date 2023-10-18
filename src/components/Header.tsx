@@ -1,5 +1,5 @@
 // import logo from "../assets/deprogrammer.svg";
-import logo from "../assets/tdp_logo_blue.svg";
+import logo from "../assets/logo/dp_web_3c_white_sm.svg";
 import QRCode from "react-qr-code";
 import { graphqlUrl } from "../data/graphqlConfig";
 

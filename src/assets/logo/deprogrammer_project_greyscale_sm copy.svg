@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 25.0.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 511.431 511.431" style="enable-background:new 0 0 511.431 511.431;" xml:space="preserve">
+<g id="bg" style="display:none;">
+	<rect x="-4843.869" y="-3387.361" style="display:inline;fill:#C2B59B;" width="9859.854" height="4091.034"/>
+</g>
+<g id="Layer_1">
+	<g>
+		
+			<radialGradient id="SVGID_1_" cx="206.9717" cy="122.4638" r="457.6876" fx="-12.0989" fy="-142.3879" gradientTransform="matrix(0.9269 -0.3752 0.3268 0.8074 -24.9027 101.2462)" gradientUnits="userSpaceOnUse">
+			<stop  offset="0" style="stop-color:#ADADAD"/>
+			<stop  offset="0.6625" style="stop-color:#2B2B2B"/>
+		</radialGradient>
+		<path style="fill:url(#SVGID_1_);" d="M365.252,210.86c-26.423,0-46.409,19.484-46.409,51.841
+			c0,32.357,19.986,51.843,46.409,51.843c26.423,0,46.41-19.485,46.41-51.843C411.662,230.344,391.675,210.86,365.252,210.86z"/>
+		
+			<radialGradient id="SVGID_2_" cx="206.9717" cy="122.4638" r="457.6876" fx="-12.0989" fy="-142.3879" gradientTransform="matrix(0.9269 -0.3752 0.3268 0.8074 -24.9027 101.2462)" gradientUnits="userSpaceOnUse">
+			<stop  offset="0" style="stop-color:#ADADAD"/>
+			<stop  offset="0.6625" style="stop-color:#2B2B2B"/>
+		</radialGradient>
+		<path style="fill:url(#SVGID_2_);" d="M146.518,210.861c-26.424,0-46.749,19.484-46.749,51.841
+			c0,32.357,20.325,51.842,46.749,51.842c26.083,0,46.41-19.485,46.41-51.842C192.928,230.344,172.602,210.861,146.518,210.861z"/>
+		
+			<radialGradient id="SVGID_3_" cx="206.9717" cy="122.4638" r="457.6876" fx="-12.0989" fy="-142.3879" gradientTransform="matrix(0.9269 -0.3752 0.3268 0.8074 -24.9027 101.2462)" gradientUnits="userSpaceOnUse">
+			<stop  offset="0" style="stop-color:#ADADAD"/>
+			<stop  offset="0.6625" style="stop-color:#2B2B2B"/>
+		</radialGradient>
+		<path style="fill:url(#SVGID_3_);" d="M255.716,0C114.488,0,0,114.488,0,255.716s114.488,255.716,255.716,255.716
+			s255.716-114.488,255.716-255.716S396.944,0,255.716,0z M244.758,324.612l-50.476,59.216v-49.104
+			c-13.211,16.353-32.52,24.356-56.91,24.356c-51.492,0-91.126-37.576-91.126-96.378c0-19.936,4.567-37.422,12.597-51.841
+			c11.757-21.112,30.957-35.617,54.208-41.536c7.707-1.962,15.849-2.999,24.321-2.999c22.357,0,41.328,7.306,54.54,22.615V84.913
+			l52.846-59.215V324.612z M374.399,359.079c-22.697,0-41.328-7.307-54.879-22.615V437.01l-52.846,59.136v-308.58l50.474-59.134
+			v62.249c13.213-16.353,32.861-24.355,57.251-24.355c51.151,0,90.787,37.576,90.787,96.376
+			C465.185,321.502,425.55,359.079,374.399,359.079z"/>
+	</g>
+</g>
+</svg>

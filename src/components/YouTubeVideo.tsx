@@ -1,10 +1,14 @@
-import React from 'react';
+import React from "react";
 
 interface YouTubeVideoProps {
   contentID: string;
+  description: string;
 }
 
-const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ contentID }) => {
+const YouTubeVideo: React.FC<YouTubeVideoProps> = ({
+  contentID,
+  description,
+}) => {
   return (
     <div className="video-container">
       <div className="video-wrapper">

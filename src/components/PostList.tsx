@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from "react";
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { styled } from "@mui/system";
 import { DateFormatters } from "../utils/DateFormatters";
+import {
+  CustomAccordion,
+  CustomAccordionSummary,
+  CustomAccordionDetails,
+  CustomExpandMoreIcon,
+} from "./CustomAccordion";
 
 // Define the prop types for PostList
 interface PostListProps {
   graphqlUrl: string;
   graphqlEndpoint: string;
   graphqlQuery: string;
+  postListTitle: JSX.Element;
 }
 
 // Define the type for a single post
@@ -41,41 +40,6 @@ interface Post {
   uri: string;
 }
 
-const customAccordionStyles = {
-  fontFamily: "'Century Gothic', sans-serif",
-  backgroundColor: "#111",
-  border: "none",
-  boxShadow: "none  ",
-};
-
-const customAccordionSummaryStyles = {
-  backgroundColor: "#111",
-  color: "#ccc",
-  cursor: "pointer",
-  width: "100%",
-};
-
-const customAccordionDetailsStyles = {
-  backgroundColor: "#111",
-  color: "#ccc",
-};
-
-const customExpandMoreIconStyles = {
-  color: "#ccc",
-};
-
-const CustomAccordion = styled(Accordion)(customAccordionStyles);
-
-const CustomAccordionSummary = styled(AccordionSummary)(
-  customAccordionSummaryStyles
-);
-
-const CustomAccordionDetails = styled(AccordionDetails)(
-  customAccordionDetailsStyles
-);
-
-const CustomExpandMoreIcon = styled(ExpandMoreIcon)(customExpandMoreIconStyles);
-
 const trimUrl = (url: string) => {
   return url.replace(/^https?:\/\/|\/$/g, "");
 };
@@ -84,6 +48,7 @@ const PostList: React.FC<PostListProps> = ({
   graphqlUrl,
   graphqlQuery,
   graphqlEndpoint,
+  postListTitle,
 }) => {
   const trimmedUrl = trimUrl(graphqlUrl);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -122,17 +87,7 @@ const PostList: React.FC<PostListProps> = ({
       ) : (
         <CustomAccordion>
           <CustomAccordionSummary expandIcon={<CustomExpandMoreIcon />}>
-            <h2>
-              Recent Posts from{" "}
-              <a
-                href={graphqlUrl}
-                target="_blank"
-                rel="noreferrer"
-                title={graphqlUrl}
-              >
-                {trimmedUrl}
-              </a>
-            </h2>
+            <h2>{postListTitle}</h2>
           </CustomAccordionSummary>
           <CustomAccordionDetails>
             <ul>
@@ -173,9 +128,10 @@ const PostList: React.FC<PostListProps> = ({
                           <p className="source-ling">Read the article...</p>
                         </CustomAccordionSummary>
                         <CustomAccordionDetails>
-                          <p
+                          <div
+                            className="wp-post"
                             dangerouslySetInnerHTML={{ __html: post.content }}
-                          ></p>
+                          ></div>
                         </CustomAccordionDetails>
                       </CustomAccordion>
                       <p className="source-link">

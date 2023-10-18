@@ -1,5 +1,5 @@
 import React from "react";
-import logo from "../assets/tdp_logo_blue.svg";
+import logo from "../assets/logo/dp_web_3c_white_sm.svg";
 import AboutPage from "../pages/About";
 import GetInvolved from "../pages/GetInvolved";
 import PopupWindow from "./PopupWindow";

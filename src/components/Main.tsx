@@ -11,7 +11,19 @@ import {
 const numberOfPosts = 15;
 const categoryName = "articles";
 
-const dynamicQgraphqlQuery = generateGraphqlQuery(numberOfPosts, categoryName);
+const dynamicGraphqlQuery = generateGraphqlQuery(numberOfPosts, categoryName);
+
+const trimUrl = (url: string) => {
+  return url.replace(/^https?:\/\/|\/$/g, "");
+};
+const postListTitle = (
+  <h2>
+    Recent Posts from{" "}
+    <a href={graphqlUrl} target="_blank" rel="noreferrer" title={graphqlUrl}>
+      {trimUrl(graphqlUrl)}
+    </a>
+  </h2>
+);
 
 const Main = () => {
   return (
@@ -20,9 +32,10 @@ const Main = () => {
         <PostList
           graphqlUrl={graphqlUrl}
           graphqlEndpoint={graphqlEndpoint}
-          graphqlQuery={dynamicQgraphqlQuery}
+          graphqlQuery={dynamicGraphqlQuery}
+          postListTitle={postListTitle}
         />
-        <MediaRenderer mediaArray={mediaData} />
+        <MediaRenderer mediaArray={mediaData} title="Selected Recent Media" />
       </div>
     </main>
   );

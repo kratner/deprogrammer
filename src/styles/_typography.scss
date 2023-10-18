@@ -32,3 +32,21 @@ a {
     color: $base-font-hover-color;
   }
 }
+
+[class$="-list"] {
+  ul {
+    li {
+      list-style: none;
+      .wp-post-featured-image {
+        width: 100%;
+      }
+      .wp-post {
+        ul {
+          li {
+            list-style: circle;
+          }
+        }
+      }
+    }
+  }
+}

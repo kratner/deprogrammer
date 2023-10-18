@@ -1,29 +1,59 @@
-import React from 'react';
-import ACastAudio from './ACastAudio';
-import YouTubeVideo from './YouTubeVideo';
-
+import React from "react";
+import ACastAudio from "./ACastAudio";
+import YouTubeVideo from "./YouTubeVideo";
+import {
+  CustomAccordion,
+  CustomAccordionDetails,
+  CustomAccordionSummary,
+  CustomExpandMoreIcon,
+} from "./CustomAccordion";
 interface Media {
   mediaType: string;
   contentID: string;
+  description: string;
+  publishedDate: string;
 }
 
 interface MediaRendererProps {
   mediaArray: Media[];
+  title: string;
 }
 
-const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaArray }) => {
+const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaArray, title }) => {
   return (
-    <div>
-      {mediaArray.map((media, index) => {
-        if (media.mediaType === 'ACastAudio') {
-          return <ACastAudio key={index} contentID={media.contentID} />;
-        } else if (media.mediaType === 'YouTubeVideo') {
-          return <YouTubeVideo key={index} contentID={media.contentID} />;
-        }
-        // Add more conditionals for other media types as needed
-
-        return null; // Render nothing if the media type is not supported
-      })}
+    <div className="media-list">
+      <CustomAccordion>
+        <CustomAccordionSummary expandIcon={<CustomExpandMoreIcon />}>
+          <h2>{title}</h2>
+        </CustomAccordionSummary>
+        <CustomAccordionDetails>
+          <ul>
+            {mediaArray.map((media, index) => (
+              <li key={index}>
+                <CustomAccordion>
+                  <CustomAccordionSummary expandIcon={<CustomExpandMoreIcon />}>
+                    <h3>{media.description}</h3>
+                  </CustomAccordionSummary>
+                  <CustomAccordionDetails>
+                    {media.mediaType === "ACastAudio" ? (
+                      <ACastAudio
+                        contentID={media.contentID}
+                        description={media.description}
+                      />
+                    ) : media.mediaType === "YouTubeVideo" ? (
+                      <YouTubeVideo
+                        contentID={media.contentID}
+                        description={media.description}
+                      />
+                    ) : // Handle other media types as needed
+                    null}
+                  </CustomAccordionDetails>
+                </CustomAccordion>
+              </li>
+            ))}
+          </ul>
+        </CustomAccordionDetails>
+      </CustomAccordion>
     </div>
   );
 };
