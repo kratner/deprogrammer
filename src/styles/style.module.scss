@@ -1,0 +1,8 @@
+@import "main.scss";
+
+:export {
+  pageBackgroundColor: $page-background-color;
+  baseFontFamily: $base-font-family;
+  baseFontColor: $base-font-color;
+  baseFontHoverColor: $base-font-hover-color;
+}

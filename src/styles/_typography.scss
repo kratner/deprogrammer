@@ -1,14 +1,6 @@
-// Typography Variables
-$base-font: "Century Gothic", sans-serif;
-$base-font-size: 16px;
-$base-line-height: 1.5;
-$base-font-color: #fff;
-$base-font-visited-color: #ccc;
-$base-font-hover-color: rgb(255, 255, 0);
-
 // Typography Styles
 body {
-  font-family: $base-font;
+  font-family: $base-font-family;
   font-size: $base-font-size;
   line-height: $base-line-height;
 }
