@@ -30,6 +30,7 @@ final class CN_Members {
 	const META_GOOGLE = 'cn_google_sub';
 	const META_FOLLOWS = 'cn_follows';
 	const META_SAVED   = 'cn_saved';
+	const META_LAYOUT  = 'cn_layout';
 	const MAX_SAVED    = 200;
 	const LINK_TTL     = 20 * MINUTE_IN_SECONDS;
 
@@ -97,6 +98,7 @@ final class CN_Members {
 			'follows'  => array_values( (array) ( get_user_meta( $u->ID, self::META_FOLLOWS, true ) ?: [] ) ),
 			'saved'    => array_values( is_array( $saved ) ? $saved : [] ),
 			'isMember' => self::is_member( $u ),
+			'layout'   => self::sanitize_layout( get_user_meta( $u->ID, self::META_LAYOUT, true ) ),
 		];
 	}
 
@@ -112,6 +114,7 @@ final class CN_Members {
 		register_rest_route( $ns, '/me', [ 'methods' => 'GET', 'permission_callback' => $public, 'callback' => static fn() => new WP_REST_Response( self::me(), 200 ) ] );
 		register_rest_route( $ns, '/follow', [ 'methods' => 'POST', 'permission_callback' => $member, 'callback' => [ __CLASS__, 'follow' ] ] );
 		register_rest_route( $ns, '/save', [ 'methods' => 'POST', 'permission_callback' => $member, 'callback' => [ __CLASS__, 'save' ] ] );
+		register_rest_route( $ns, '/layout', [ 'methods' => 'POST', 'permission_callback' => $member, 'callback' => [ __CLASS__, 'save_layout' ] ] );
 		register_rest_route( $ns, '/account/delete', [ 'methods' => 'POST', 'permission_callback' => $member, 'callback' => [ __CLASS__, 'delete_account' ] ] );
 	}
 
@@ -362,6 +365,35 @@ final class CN_Members {
 		return new WP_REST_Response( [ 'ok' => true, 'saved' => $saved ], 200 );
 	}
 
+	/** Page layout from "Edit this page": section order, hidden sections, start category, density. */
+	public static function sanitize_layout( $raw ) {
+		if ( ! is_array( $raw ) ) {
+			return null;
+		}
+		$known = [ 'latest', 'watched', 'uploads', 'saved', 'lineup', 'suggest' ];
+		$keep  = static fn( $list ) => array_values( array_unique( array_intersect( array_map( 'strval', (array) $list ), $known ) ) );
+		$cat   = (string) ( $raw['cat'] ?? 'all' );
+		if ( ! in_array( $cat, [ 'all', 'mine' ], true ) && ! isset( CN_Lineup::category_labels()[ $cat ] ) ) {
+			$cat = 'all';
+		}
+		return [
+			'order'   => $keep( $raw['order'] ?? [] ),
+			'hidden'  => $keep( $raw['hidden'] ?? [] ),
+			'cat'     => $cat,
+			'density' => 'compact' === ( $raw['density'] ?? '' ) ? 'compact' : 'cards',
+		];
+	}
+
+	public static function save_layout( WP_REST_Request $req ) {
+		$layout = $req['reset'] ? null : self::sanitize_layout( $req['layout'] );
+		if ( null === $layout ) {
+			delete_user_meta( get_current_user_id(), self::META_LAYOUT );
+		} else {
+			update_user_meta( get_current_user_id(), self::META_LAYOUT, $layout );
+		}
+		return new WP_REST_Response( [ 'ok' => true, 'layout' => $layout ], 200 );
+	}
+
 	public static function delete_account() {
 		$user = wp_get_current_user();
 		if ( ! self::is_member( $user ) ) {
@@ -370,6 +402,10 @@ final class CN_Members {
 		require_once ABSPATH . 'wp-admin/includes/user.php';
 		$uid = $user->ID;
 		wp_logout();
+		// Our data goes even when the user survives on another site of the network.
+		foreach ( [ self::META_FOLLOWS, self::META_SAVED, self::META_GOOGLE, self::META_LAYOUT ] as $k ) {
+			delete_user_meta( $uid, $k );
+		}
 		if ( is_multisite() ) {
 			require_once ABSPATH . 'wp-admin/includes/ms.php';
 			remove_user_from_blog( $uid, get_current_blog_id() );
@@ -440,7 +476,7 @@ final class CN_Members {
 		$u = get_user_by( 'email', $email );
 		$n = 0;
 		if ( $u ) {
-			foreach ( [ self::META_FOLLOWS, self::META_SAVED, self::META_GOOGLE ] as $k ) {
+			foreach ( [ self::META_FOLLOWS, self::META_SAVED, self::META_GOOGLE, self::META_LAYOUT ] as $k ) {
 				$n += (int) delete_user_meta( $u->ID, $k );
 			}
 		}

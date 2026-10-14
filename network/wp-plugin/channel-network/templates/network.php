@@ -17,6 +17,19 @@ $cn_watched  = CN_Lineup::watched();
 $cn_seen     = array_flip( array_column( $cn_watched['items'], 'id' ) );
 $cn_stream   = array_values( array_filter( CN_Feeds::stream(), static fn( $v ) => ! isset( $cn_seen[ $v['id'] ] ) ) );
 $cn_cache    = CN_Feeds::cache();
+$cn_latest   = CN_Feeds::latest();
+// Sections "Edit this page" can reorder and hide (keys match CN_Members::sanitize_layout()).
+$cn_sections = [
+	'latest'  => __( 'The Latest', 'channel-network' ),
+	'watched' => __( 'Recently watched', 'channel-network' ),
+	'uploads' => __( 'Latest from the network', 'channel-network' ),
+	'saved'   => __( 'Saved for later', 'channel-network' ),
+	'lineup'  => __( 'The lineup', 'channel-network' ),
+	'suggest' => __( 'Suggest a channel', 'channel-network' ),
+];
+if ( ! CN_Members::enabled() ) {
+	unset( $cn_sections['saved'] );
+}
 $cn_updated  = (int) $cn_cache['refreshed_at'];
 $cn_guide    = CN_Settings::get( 'field_guide' ) ? CN_Page::field_guide() : [];
 $cn_page     = get_queried_object();
@@ -124,11 +137,95 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 		}
 		?>
 	</p>
+	<button type="button" class="cn-edit-btn" aria-expanded="false" aria-controls="cn-edit">
+		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>
+		<?php esc_html_e( 'Edit this page', 'channel-network' ); ?>
+	</button>
 </div>
 
+<section class="cn-wrap cn-edit" id="cn-edit" aria-labelledby="cn-edit-h" hidden>
+	<div class="cn-edit-card">
+		<div class="cn-edit-head">
+			<h2 class="cn-edit-h" id="cn-edit-h"><?php esc_html_e( 'Edit this page', 'channel-network' ); ?></h2>
+			<p class="cn-edit-note"></p>
+		</div>
+		<div class="cn-edit-grid">
+			<fieldset class="cn-edit-group">
+				<legend><?php esc_html_e( 'Sections', 'channel-network' ); ?></legend>
+				<p class="cn-edit-hint"><?php esc_html_e( 'Drag to reorder, or use the arrows. Untick to hide.', 'channel-network' ); ?></p>
+				<ol class="cn-edit-list">
+					<?php foreach ( $cn_sections as $key => $label ) : ?>
+						<li class="cn-edit-item" data-key="<?php echo esc_attr( $key ); ?>" draggable="true">
+							<span class="cn-grip" aria-hidden="true">⋮⋮</span>
+							<label><input type="checkbox" checked data-show="<?php echo esc_attr( $key ); ?>"> <?php echo esc_html( $label ); ?></label>
+							<span class="cn-edit-moves">
+								<button type="button" data-move="-1" aria-label="<?php echo esc_attr( sprintf( /* translators: %s section */ __( 'Move %s up', 'channel-network' ), $label ) ); ?>">↑</button>
+								<button type="button" data-move="1" aria-label="<?php echo esc_attr( sprintf( /* translators: %s section */ __( 'Move %s down', 'channel-network' ), $label ) ); ?>">↓</button>
+							</span>
+						</li>
+					<?php endforeach; ?>
+				</ol>
+			</fieldset>
+			<div class="cn-edit-side">
+				<fieldset class="cn-edit-group">
+					<legend><label for="cn-edit-cat"><?php esc_html_e( 'Open the page on', 'channel-network' ); ?></label></legend>
+					<select id="cn-edit-cat" class="cn-edit-select">
+						<option value="all"><?php esc_html_e( 'All categories', 'channel-network' ); ?></option>
+						<?php if ( CN_Members::enabled() ) : ?>
+							<option value="mine" data-members-only><?php esc_html_e( 'My network (channels I follow)', 'channel-network' ); ?></option>
+						<?php endif; ?>
+						<?php foreach ( $cn_cats as $key => $label ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</fieldset>
+				<fieldset class="cn-edit-group">
+					<legend><?php esc_html_e( 'Video layout', 'channel-network' ); ?></legend>
+					<label class="cn-radio"><input type="radio" name="cn-density" value="cards" checked> <?php esc_html_e( 'Big cards', 'channel-network' ); ?></label>
+					<label class="cn-radio"><input type="radio" name="cn-density" value="compact"> <?php esc_html_e( 'Compact list', 'channel-network' ); ?></label>
+				</fieldset>
+			</div>
+		</div>
+		<div class="cn-edit-actions">
+			<button type="button" class="cn-btn cn-edit-reset"><?php esc_html_e( 'Reset to default', 'channel-network' ); ?></button>
+			<button type="button" class="cn-btn cn-btn-primary cn-edit-done"><?php esc_html_e( 'Done', 'channel-network' ); ?></button>
+		</div>
+	</div>
+</section>
+
 <main id="cn-main">
+	<?php if ( $cn_latest ) : ?>
+	<section class="cn-wrap cn-section cn-feed cn-rail-section" id="cn-the-latest" data-section="latest" data-no-lead data-hide-empty aria-labelledby="cn-the-latest-h">
+		<div class="cn-stream-head">
+			<div>
+				<h2 class="cn-h2" id="cn-the-latest-h"><?php esc_html_e( 'The Latest', 'channel-network' ); ?></h2>
+				<p class="cn-sub"><?php esc_html_e( 'Newest uploads across the network, newest first', 'channel-network' ); ?></p>
+			</div>
+		</div>
+		<ol class="cn-grid cn-rail" data-page-size="40">
+			<?php foreach ( $cn_latest as $cn_i => $v ) :
+				$ch      = $v['channel'];
+				$cn_card = [
+					'id'             => $v['id'],
+					'title'          => $v['title'],
+					'cat'            => $ch['category'],
+					'channel_id'     => $ch['channelId'],
+					'cat_label'      => $cn_cats[ $ch['category'] ] ?? '',
+					'ts'             => (int) $v['published'],
+					'avatar_channel' => $ch,
+					'channel_name'   => $ch['name'],
+					'channel_url'    => $ch['url'],
+					'time_html'      => '<time data-ago datetime="' . esc_attr( gmdate( 'c', $v['published'] ) ) . '">' . esc_html( CN_Page::ago( $v['published'] ) ) . '</time>',
+					'index'          => $cn_i < 4 ? $cn_i : $cn_i + 20,
+				];
+				include CN_DIR . 'templates/card.php';
+			endforeach; ?>
+		</ol>
+	</section>
+	<?php endif; ?>
+
 	<?php if ( $cn_watched['items'] ) : ?>
-	<section class="cn-wrap cn-section cn-feed" id="cn-stream" data-hide-empty aria-labelledby="cn-watched-h">
+	<section class="cn-wrap cn-section cn-feed" id="cn-stream" data-section="watched" data-hide-empty aria-labelledby="cn-watched-h">
 		<div class="cn-stream-head">
 			<div>
 				<h2 class="cn-h2" id="cn-watched-h"><?php esc_html_e( 'Recently watched', 'channel-network' ); ?></h2>
@@ -166,7 +263,7 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 	</section>
 	<?php endif; ?>
 
-	<section class="cn-wrap cn-section cn-feed" id="<?php echo $cn_watched['items'] ? 'cn-latest' : 'cn-stream'; ?>" data-sortable aria-labelledby="cn-latest-h">
+	<section class="cn-wrap cn-section cn-feed" id="<?php echo $cn_watched['items'] ? 'cn-latest' : 'cn-stream'; ?>" data-section="uploads" data-sortable aria-labelledby="cn-latest-h">
 		<div class="cn-stream-head">
 			<h2 class="cn-h2" id="cn-latest-h"><?php echo $cn_watched['items'] ? esc_html__( 'Latest from the network', 'channel-network' ) : esc_html__( 'Latest', 'channel-network' ); ?></h2>
 			<div class="cn-sort" role="group" aria-label="<?php esc_attr_e( 'Sort videos', 'channel-network' ); ?>" hidden>
@@ -202,13 +299,13 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 	</section>
 
 	<?php if ( CN_Members::enabled() ) : ?>
-	<section class="cn-wrap cn-section" id="cn-saved" aria-labelledby="cn-saved-h" hidden>
+	<section class="cn-wrap cn-section" id="cn-saved" data-section="saved" aria-labelledby="cn-saved-h" hidden>
 		<div class="cn-stream-head"><h2 class="cn-h2" id="cn-saved-h"><?php esc_html_e( 'Saved for later', 'channel-network' ); ?></h2></div>
 		<ol class="cn-saved-list"></ol>
 	</section>
 	<?php endif; ?>
 
-	<section class="cn-wrap cn-section" id="cn-lineup" aria-labelledby="cn-lineup-h">
+	<section class="cn-wrap cn-section" id="cn-lineup" data-section="lineup" aria-labelledby="cn-lineup-h">
 		<h2 class="cn-h2" id="cn-lineup-h"><?php esc_html_e( 'The lineup', 'channel-network' ); ?></h2>
 		<div class="cn-lineup">
 			<?php foreach ( $cn_cats as $key => $label ) :
@@ -272,7 +369,7 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 		</section>
 	<?php endif; ?>
 
-	<section class="cn-wrap cn-section" id="cn-suggest" aria-labelledby="cn-suggest-h">
+	<section class="cn-wrap cn-section" id="cn-suggest" data-section="suggest" aria-labelledby="cn-suggest-h">
 		<div class="cn-suggest">
 			<div class="cn-suggest-copy">
 				<h2 class="cn-h2" id="cn-suggest-h"><?php esc_html_e( 'Suggest a channel', 'channel-network' ); ?></h2>
