@@ -11,3 +11,9 @@
 1. Clone repository
 2. Run `npm install`
 3. Run `npm start`
+
+## Brand kit
+
+The Deprogrammer Project brand kit lives in [`brand/`](brand/): the brand book ([`brand/README.md`](brand/README.md)), design tokens ([`brand/tokens.json`](brand/tokens.json)), logo files ([`brand/assets/Logos/`](brand/assets/Logos/)) and live previews of the video and thumbnail components ([`brand/components/`](brand/components/)).
+
+It covers the Deprogramming network page (https://deprogrammer.org/network) and the promotional videos for the YouTube channel [@deprogrammerproject](https://www.youtube.com/@deprogrammerproject). The logo files are cleaned copies of the originals in [`src/assets/logo/`](src/assets/logo/).

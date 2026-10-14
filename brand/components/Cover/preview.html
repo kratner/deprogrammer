@@ -1,0 +1,36 @@
+<!-- @dsCard height=288 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter:wght@400;500&display=swap">
+<style>
+.cv{position:relative;width:960px;height:288px;background:var(--surface);overflow:hidden}
+.cv svg{position:absolute;left:0;top:0}
+.deep{fill:var(--brand-green-deep)}
+.bright{fill:var(--brand-green-bright)}
+.parch{fill:var(--parchment)}
+.mag{fill:var(--signal-magenta)}
+.inkb{fill:var(--ink)}
+.ring{fill:none;stroke:var(--brand-green-bright);stroke-width:4}
+.ring.p{stroke:var(--parchment)}
+.name{position:absolute;left:40px;top:150px;margin:0;font:800 64px/.95 var(--font-display);color:var(--ink);letter-spacing:.5px;max-width:880px}
+.tag{position:absolute;left:40px;top:222px;margin:0;font:400 14px/1.4 var(--font-sans);color:var(--muted);max-width:440px}
+</style>
+<div class="cv">
+<svg width="960" height="120" viewBox="0 0 960 120" aria-hidden="true">
+<!--
+blocks: brand-green-deep 456x120 (slab), parchment 168x120, ink 144x120, brand-green-bright 120x120, signal-magenta 72x120 (signal, smallest): widths are multiples of space-6 (24px)
+arrangement: one horizontal strip of unequal bands across the top (top-band skeleton: the name "Deprogrammer Project" is too wide for the 440px zone at 64px)
+pattern: literal motif, the logo's round "dp" mark and the rabbit hole the brand pulls you out of, as concentric rings bleeding off the slab; chosen because the README names circles/rings as the only video motif
+scales: band height 120 = 5 x space-6; ring stroke 4 = space-1; ring radii 24/48/72/96 = space-6 multiples; no radii (square bands, discs are full circles)
+-->
+<rect class="deep" x="0" y="0" width="456" height="120"/>
+<rect class="parch" x="456" y="0" width="168" height="120"/>
+<rect class="inkb" x="624" y="0" width="144" height="120"/>
+<rect class="bright" x="768" y="0" width="120" height="120"/>
+<rect class="mag" x="888" y="0" width="72" height="120"/>
+<circle class="ring" cx="372" cy="60" r="24"/>
+<circle class="ring" cx="372" cy="60" r="48"/>
+<circle class="ring" cx="372" cy="60" r="72"/>
+<circle class="ring p" cx="372" cy="60" r="96"/>
+</svg>
+<p class="name">Deprogrammer Project</p>
+<p class="tag">The brand behind Deprogramming, deprogrammer.org/network, and the videos that send people to it.</p>
+</div>
