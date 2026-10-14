@@ -556,7 +556,7 @@
 					ok: 'You’re signed in.',
 					expired: 'That sign-in link expired or was already used. Request a new one.',
 					failed: 'Sign-in failed. Please try again.',
-					staff: 'That address belongs to a staff account. Use the regular WordPress login.'
+					staff: 'That account is one of this site’s admin or editor accounts, so it can’t be a member account. Staff sign in through the regular WordPress login.'
 				};
 				if (notes[si]) toast(notes[si]);
 				if (si === 'welcome' || si === 'ok') track(si === 'welcome' ? 'sign_up' : 'login', { method: 'email' });

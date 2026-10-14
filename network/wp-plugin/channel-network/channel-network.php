@@ -5,7 +5,7 @@
  *
  * Plugin Name:       Channel Network
  * Description:       The "Deprogramming" page: a curated network of YouTube news & politics channels with their latest videos, plus visitor channel suggestions.
- * Version:           1.3.2
+ * Version:           1.3.3
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Keith Ratner
@@ -20,7 +20,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CN_VERSION', '1.3.2' );
+define( 'CN_VERSION', '1.3.3' );
 define( 'CN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CN_URL', plugin_dir_url( __FILE__ ) );
 

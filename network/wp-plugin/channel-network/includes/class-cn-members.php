@@ -204,7 +204,7 @@ final class CN_Members {
 			// Staff (anyone who can edit posts, on any site of the network) never get a session
 			// through the public member sign-in; they use the normal WordPress login.
 			if ( user_can( $user, 'edit_posts' ) || is_super_admin( $user->ID ) ) {
-				return new WP_Error( 'staff', __( 'This address belongs to a staff account. Please sign in through the regular WordPress login.', 'channel-network' ) );
+				return new WP_Error( 'staff', __( 'That account is one of this site\'s admin or editor accounts, so it can\'t be used as a member account. Staff sign in through the regular WordPress login.', 'channel-network' ) );
 			}
 			if ( $google_sub && ! get_user_meta( $user->ID, self::META_GOOGLE, true ) ) {
 				update_user_meta( $user->ID, self::META_GOOGLE, $google_sub );
