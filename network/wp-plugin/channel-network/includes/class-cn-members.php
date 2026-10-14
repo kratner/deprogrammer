@@ -36,8 +36,12 @@ final class CN_Members {
 	public static function init() {
 		add_action( 'rest_api_init', [ __CLASS__, 'register_routes' ] );
 		add_action( 'template_redirect', [ __CLASS__, 'maybe_consume_link' ], 1 );
-		add_filter( 'show_admin_bar', [ __CLASS__, 'admin_bar' ] );
-		add_action( 'admin_init', [ __CLASS__, 'keep_members_out_of_admin' ] );
+		if ( self::enabled() ) {
+			// Only once sign-in is on: with it off, existing subscribers on the site keep
+			// their admin bar and wp-admin profile exactly as before.
+			add_filter( 'show_admin_bar', [ __CLASS__, 'admin_bar' ] );
+			add_action( 'admin_init', [ __CLASS__, 'keep_members_out_of_admin' ] );
+		}
 		add_filter( 'wp_privacy_personal_data_exporters', [ __CLASS__, 'register_exporter' ] );
 		add_filter( 'wp_privacy_personal_data_erasers', [ __CLASS__, 'register_eraser' ] );
 		if ( defined( 'CN_DEV_MAIL_LOG' ) ) {
