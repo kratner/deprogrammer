@@ -435,19 +435,26 @@ body.admin-bar .cn-top { top: 32px; }
 .cn-saved-rm { flex: none; width: 44px; height: 44px; margin-right: 4px; border: 0; border-radius: 10px; background: none; color: var(--cn-muted); font-size: 22px; cursor: pointer; }
 .cn-saved-rm:hover { background: var(--cn-chip); color: var(--cn-ink); }
 
-/* Sign-in dialog */
+/* Sign-in panel: drops down from the top-bar button (no modal, no page dimming) */
+.cn-signin-wrap { position: relative; }
 .cn-auth {
-	width: min(440px, calc(100vw - 32px)); max-width: none; padding: clamp(22px, 4vw, 32px); border: 0; border-radius: var(--cn-r-lg);
-	background: var(--cn-raised); color: var(--cn-ink); box-shadow: var(--cn-shadow); font-family: var(--cn-sans);
+	position: absolute; right: 0; top: calc(100% + 10px); z-index: 40;
+	width: min(360px, calc(100vw - 32px)); padding: 20px; border-radius: var(--cn-r-lg);
+	background: var(--cn-raised); color: var(--cn-ink); font-family: var(--cn-sans);
+	box-shadow: var(--cn-shadow), 0 0 0 1px var(--cn-line);
 }
-.cn-auth::backdrop { background: rgb(5 6 8 / 60%); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
-.cn-auth-close { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border: 0; border-radius: 10px; background: none; color: var(--cn-muted); font-size: 26px; line-height: 1; cursor: pointer; }
+.cn-auth[hidden] { display: none; }
+@media (max-width: 599px) {
+	.cn-signin-wrap { position: static; }
+	.cn-auth { left: 16px; right: 16px; top: 56px; width: auto; } /* positioned against .cn-top */
+}
+.cn-auth-close { position: absolute; top: 6px; right: 6px; width: 40px; height: 40px; border: 0; border-radius: 10px; background: none; color: var(--cn-muted); font-size: 22px; line-height: 1; cursor: pointer; }
 .cn-auth-close:hover { background: var(--cn-chip); color: var(--cn-ink); }
-.cn-auth-h { margin: 0 0 6px; font-family: var(--cn-serif); font-size: 24px; line-height: 1.15; }
-.cn-auth-sub { margin: 0 0 20px; font-size: 14.5px; line-height: 1.5; color: var(--cn-ink-2); }
+.cn-auth-h { margin: 0 36px 4px 0; font-family: var(--cn-serif); font-size: 19px; font-weight: 700; line-height: 1.2; }
+.cn-auth-sub { margin: 0 0 16px; font-size: 13.5px; line-height: 1.45; color: var(--cn-ink-2); }
 .cn-gsi { min-height: 44px; display: flex; justify-content: center; }
 .cn-gsi[hidden] + .cn-auth-or { display: none; }
-.cn-auth-or { display: flex; align-items: center; gap: 12px; margin: 18px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--cn-muted); }
+.cn-auth-or { display: flex; align-items: center; gap: 12px; margin: 14px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--cn-muted); }
 .cn-auth-or::before, .cn-auth-or::after { content: ""; flex: 1; height: 1px; background: var(--cn-line); }
 .cn-auth-form > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .cn-auth-row { display: flex; gap: 8px; }
@@ -464,13 +471,18 @@ body.admin-bar .cn-top { top: 32px; }
 .cn-auth-status.is-error { color: var(--cn-err); }
 .cn-auth-fine { margin: 14px 0 0; font-size: 12px; line-height: 1.5; color: var(--cn-muted); }
 .cn-auth-fine a { color: inherit; }
-@media (max-width: 420px) { .cn-auth-row { flex-direction: column; } }
+@media (max-width: 380px) { .cn-auth-row { flex-direction: column; } }
 
 /* Toast */
 .cn-toast {
 	position: fixed; left: 50%; bottom: 24px; z-index: 100; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
-	max-width: calc(100vw - 32px); padding: 12px 18px; border-radius: 12px; font: 500 14px/1.4 var(--cn-sans);
+	display: flex; align-items: center; width: max-content; max-width: calc(100vw - 32px); padding: 12px 18px; border-radius: 12px; font: 500 14px/1.4 var(--cn-sans);
 	background: var(--cn-ink); color: var(--cn-bg); box-shadow: var(--cn-shadow); transition: opacity .2s, transform .2s;
 }
-.cn-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.cn-toast.is-on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.cn-toast-act {
+	margin-left: 12px; font: 650 14px/1 var(--cn-sans); color: var(--cn-bg); background: none; border: 0; padding: 6px 2px;
+	text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
 @media (prefers-reduced-motion: reduce) { .cn-save, .cn-toast { transition: none; } }
+.cn-auth-status:empty { margin: 0; min-height: 0; }

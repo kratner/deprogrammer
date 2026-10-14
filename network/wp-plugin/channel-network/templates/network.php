@@ -51,7 +51,33 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 		<div class="cn-top-actions">
 			<a class="cn-suggest-link" href="#cn-suggest"><?php esc_html_e( 'Suggest a channel', 'channel-network' ); ?></a>
 			<?php if ( CN_Members::enabled() ) : ?>
-				<button type="button" class="cn-signin" hidden><?php esc_html_e( 'Sign in', 'channel-network' ); ?></button>
+				<div class="cn-signin-wrap">
+					<button type="button" class="cn-signin" aria-expanded="false" aria-controls="cn-auth" hidden><?php esc_html_e( 'Sign in', 'channel-network' ); ?></button>
+					<div class="cn-auth" id="cn-auth" role="dialog" aria-labelledby="cn-auth-h" hidden>
+						<button type="button" class="cn-auth-close" aria-label="<?php esc_attr_e( 'Close', 'channel-network' ); ?>">×</button>
+						<p class="cn-auth-h" id="cn-auth-h"><?php esc_html_e( 'Sign in to Deprogramming', 'channel-network' ); ?></p>
+						<p class="cn-auth-sub"><?php esc_html_e( 'Follow channels and save videos for later. Free, no password.', 'channel-network' ); ?></p>
+						<div class="cn-gsi" id="cn-gsi"></div>
+						<p class="cn-auth-or"><span><?php esc_html_e( 'or', 'channel-network' ); ?></span></p>
+						<form class="cn-auth-form" novalidate>
+							<label for="cn-auth-email"><?php esc_html_e( 'Email me a sign-in link', 'channel-network' ); ?></label>
+							<div class="cn-auth-row">
+								<input id="cn-auth-email" name="email" type="email" autocomplete="email" required maxlength="190" placeholder="you@example.com">
+								<button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send link', 'channel-network' ); ?></button>
+							</div>
+							<div class="cn-hp" aria-hidden="true"><label for="cn-auth-website">Website</label><input id="cn-auth-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+							<label class="cn-auth-check"><input type="checkbox" name="newsletter" id="cn-auth-newsletter" value="1"> <?php esc_html_e( 'Also email me the weekly roundup (you\'ll confirm by email; unsubscribe anytime)', 'channel-network' ); ?></label>
+							<p class="cn-auth-status" role="status" aria-live="polite"></p>
+						</form>
+						<p class="cn-auth-fine"><?php
+							$cn_pp = CN_Page::privacy_url();
+							esc_html_e( 'We store your name and email to run your account, plus the channels you follow and videos you save.', 'channel-network' );
+							if ( $cn_pp ) {
+								echo ' <a href="' . esc_url( $cn_pp ) . '">' . esc_html__( 'Privacy policy', 'channel-network' ) . '</a>';
+							}
+						?></p>
+					</div>
+				</div>
 				<div class="cn-account" hidden>
 					<button type="button" class="cn-account-btn" aria-haspopup="true" aria-expanded="false" aria-label="<?php esc_attr_e( 'Your account', 'channel-network' ); ?>"><img alt="" width="32" height="32"></button>
 					<div class="cn-account-menu" role="menu" hidden>
@@ -309,33 +335,6 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 		<p class="cn-fine"><?php esc_html_e( 'Videos, titles and thumbnails belong to their creators and play from YouTube. Inclusion in the network is not an endorsement of every video.', 'channel-network' ); ?></p>
 	</div>
 </footer>
-
-<?php if ( CN_Members::enabled() ) : ?>
-<dialog class="cn-auth" aria-labelledby="cn-auth-h">
-	<button type="button" class="cn-auth-close" aria-label="<?php esc_attr_e( 'Close', 'channel-network' ); ?>">×</button>
-	<h2 class="cn-auth-h" id="cn-auth-h"><?php esc_html_e( 'Join Deprogramming', 'channel-network' ); ?></h2>
-	<p class="cn-auth-sub"><?php esc_html_e( 'Follow the channels you like and save videos for later. Free, and no password to remember.', 'channel-network' ); ?></p>
-	<div class="cn-gsi" id="cn-gsi"></div>
-	<p class="cn-auth-or"><span><?php esc_html_e( 'or', 'channel-network' ); ?></span></p>
-	<form class="cn-auth-form" novalidate>
-		<label for="cn-auth-email"><?php esc_html_e( 'Email me a sign-in link', 'channel-network' ); ?></label>
-		<div class="cn-auth-row">
-			<input id="cn-auth-email" name="email" type="email" autocomplete="email" required maxlength="190" placeholder="you@example.com">
-			<button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send link', 'channel-network' ); ?></button>
-		</div>
-		<div class="cn-hp" aria-hidden="true"><label for="cn-auth-website">Website</label><input id="cn-auth-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
-		<label class="cn-auth-check"><input type="checkbox" name="newsletter" id="cn-auth-newsletter" value="1"> <?php esc_html_e( 'Also email me the weekly roundup (you\'ll confirm by email; unsubscribe anytime)', 'channel-network' ); ?></label>
-		<p class="cn-auth-status" role="status" aria-live="polite"></p>
-	</form>
-	<p class="cn-auth-fine"><?php
-		$cn_pp = CN_Page::privacy_url();
-		esc_html_e( 'We store your name and email to run your account, plus the channels you follow and videos you save.', 'channel-network' );
-		if ( $cn_pp ) {
-			echo ' <a href="' . esc_url( $cn_pp ) . '">' . esc_html__( 'Privacy policy', 'channel-network' ) . '</a>';
-		}
-	?></p>
-</dialog>
-<?php endif; ?>
 
 <dialog class="cn-player" aria-label="<?php esc_attr_e( 'Video player', 'channel-network' ); ?>">
 	<div class="cn-player-inner">

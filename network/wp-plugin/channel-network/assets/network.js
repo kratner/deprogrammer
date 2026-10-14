@@ -321,11 +321,19 @@
 			return fetch(CN.rest + path, { method: 'POST', credentials: 'same-origin', headers: headers, body: JSON.stringify(body || {}) })
 				.then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
 		};
-		var toast = function (msg) {
+		/* Short status message at the bottom of the screen; optional action button. */
+		var toast = function (msg, action) {
 			var t = document.querySelector('.cn-toast');
 			if (!t) { t = document.createElement('div'); t.className = 'cn-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
-			t.textContent = msg; t.classList.add('is-on');
-			clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('is-on'); }, 3200);
+			t.textContent = msg;
+			if (action) {
+				var b = document.createElement('button');
+				b.type = 'button'; b.className = 'cn-toast-act'; b.textContent = action.label;
+				b.addEventListener('click', function (e) { e.stopPropagation(); t.classList.remove('is-on'); action.run(); });
+				t.appendChild(b);
+			}
+			t.classList.add('is-on');
+			clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('is-on'); }, action ? 6000 : 3200);
 		};
 		var savedIds = function () { return (me.saved || []).map(function (s) { return s.id; }); };
 
@@ -390,13 +398,20 @@
 			});
 		}
 
+		/* Sign-in is a small panel that drops down from the top-bar button: no page dimming,
+		   closes on outside click or Escape. */
 		function openAuth(reason) {
-			if (!auth) return;
-			if (typeof auth.showModal === 'function') auth.showModal(); else auth.setAttribute('open', '');
+			if (!auth || !auth.hidden) return;
+			auth.hidden = false;
+			signinBtn.setAttribute('aria-expanded', 'true');
 			track('login_prompt', { reason: reason || 'button' });
 			drawGsi();
 		}
-		function closeAuth() { if (auth && auth.open) auth.close(); }
+		function closeAuth() {
+			if (!auth || auth.hidden) return;
+			auth.hidden = true;
+			signinBtn.setAttribute('aria-expanded', 'false');
+		}
 
 		function signedIn(j, method) {
 			me = j.me; nonce = j.nonce || nonce;
@@ -454,10 +469,14 @@
 				.then(function () { btn.disabled = false; });
 		});
 		if (auth) {
-			auth.querySelector('.cn-auth-close').addEventListener('click', closeAuth);
-			auth.addEventListener('click', function (e) { if (e.target === auth) closeAuth(); });
+			auth.querySelector('.cn-auth-close').addEventListener('click', function () { closeAuth(); signinBtn.focus(); });
+			document.addEventListener('click', function (e) { if (!auth.hidden && !auth.parentNode.contains(e.target)) closeAuth(); });
+			document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !auth.hidden) { closeAuth(); signinBtn.focus(); } });
 		}
-		if (signinBtn) signinBtn.addEventListener('click', function () { openAuth('button'); });
+		if (signinBtn) signinBtn.addEventListener('click', function (e) {
+			e.stopPropagation();
+			if (auth.hidden) openAuth('button'); else closeAuth();
+		});
 
 		/* Account menu */
 		if (accountBtn) {
@@ -501,7 +520,14 @@
 			var fl = e.target.closest('.cn-follow');
 			if (!sv && !fl) return;
 			e.preventDefault(); e.stopPropagation();
-			if (!me.loggedIn) { openAuth(sv ? 'save' : 'follow'); return; }
+			if (!me.loggedIn) {
+				track('login_hint', { reason: sv ? 'save' : 'follow' });
+				toast(sv ? 'Sign in to save videos for later.' : 'Sign in to follow channels.', {
+					label: 'Sign in',
+					run: function () { window.scrollTo({ top: 0, behavior: 'smooth' }); openAuth(sv ? 'save' : 'follow'); }
+				});
+				return;
+			}
 			if (sv) {
 				toggleSave(sv.getAttribute('data-video'), sv.getAttribute('aria-pressed') !== 'true', {
 					title: sv.getAttribute('data-title'), channel: sv.getAttribute('data-channel'), channelId: sv.getAttribute('data-channel-id')
