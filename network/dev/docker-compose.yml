@@ -1,0 +1,54 @@
+# Local test environment for the channel-network WordPress plugin.
+# Mirrors production: WordPress multisite (subdirectory), PHP 8.2, MySQL 8, prefix wpia_.
+#   docker compose -f dev/docker-compose.yml up -d
+#   then: dev/setup.sh   → http://localhost:8088/deprogrammer/network/  (wp-admin: admin / admin)
+name: channel-network-dev
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: wp
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: wp
+      MYSQL_ROOT_PASSWORD: root
+    volumes: [db:/var/lib/mysql]
+  wordpress:
+    image: wordpress:php8.2-apache
+    depends_on: [db]
+    ports: ["8088:80"]
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp
+      WORDPRESS_DB_NAME: wp
+      WORDPRESS_TABLE_PREFIX: wpia_
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY', false);
+        if (file_exists('/fixtures')) define('CN_FIXTURE_DIR', '/fixtures');
+    volumes:
+      - wp:/var/www/html
+      - ../wp-plugin/channel-network:/var/www/html/wp-content/plugins/channel-network
+      - ./fixtures:/fixtures:ro
+  cli:
+    image: wordpress:cli-php8.2
+    depends_on: [db, wordpress]
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp
+      WORDPRESS_DB_NAME: wp
+      WORDPRESS_TABLE_PREFIX: wpia_
+      WORDPRESS_CONFIG_EXTRA: |
+        if (file_exists('/fixtures')) define('CN_FIXTURE_DIR', '/fixtures');
+    volumes:
+      - wp:/var/www/html
+      - ../wp-plugin/channel-network:/var/www/html/wp-content/plugins/channel-network
+      - ./fixtures:/fixtures:ro
+    entrypoint: ["wp"]
+    profiles: [cli]
+volumes:
+  db: {}
+  wp: {}
