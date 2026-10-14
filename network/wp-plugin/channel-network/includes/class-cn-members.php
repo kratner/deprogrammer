@@ -266,8 +266,25 @@ final class CN_Members {
 			$link
 		);
 		/* translators: %s: site name */
-		wp_mail( $email, sprintf( __( 'Your sign-in link for %s', 'channel-network' ), $site ), $body );
+		self::mail( $email, sprintf( __( 'Your sign-in link for %s', 'channel-network' ), $site ), $body );
 		return $generic;
+	}
+
+	/**
+	 * Send as no-reply@<this site's domain>, envelope sender included. On a multisite
+	 * WordPress otherwise sends as wordpress@<network domain> with the server account as
+	 * the envelope, so the site's SPF, DKIM and DMARC never apply and links land in spam.
+	 */
+	private static function mail( $to, $subject, $body ) {
+		$host = preg_replace( '/^www\./', '', (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		$from = 'no-reply@' . $host;
+		$set  = static function ( $phpmailer ) use ( $from ) {
+			$phpmailer->Sender = $from; // phpcs:ignore WordPress.NamingConventions.ValidVariableName
+		};
+		add_action( 'phpmailer_init', $set );
+		$sent = wp_mail( $to, $subject, $body, [ 'From: Deprogramming <' . $from . '>' ] );
+		remove_action( 'phpmailer_init', $set );
+		return $sent;
 	}
 
 	/** Visiting /network/?cn_login=<token>: sign in once, then redirect to a clean URL. */
