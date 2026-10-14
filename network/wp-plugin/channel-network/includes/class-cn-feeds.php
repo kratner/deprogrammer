@@ -308,6 +308,28 @@ final class CN_Feeds {
 		return $out;
 	}
 
+	/**
+	 * "The Latest": every channel's uploads from the last $hours, newest first, in strict
+	 * time order (no habit weighting). At most $per_channel per channel so one prolific
+	 * channel can't fill the strip.
+	 */
+	public static function latest( $limit = 40, $hours = 48, $per_channel = 3 ) {
+		$cache  = self::cache();
+		$cutoff = time() - $hours * HOUR_IN_SECONDS;
+		$shorts = (bool) CN_Settings::get( 'exclude_shorts' );
+		$out    = [];
+		foreach ( CN_Lineup::channels() as $ch ) {
+			$videos = $cache['channels'][ $ch['channelId'] ]['videos'] ?? [];
+			$videos = array_filter( $videos, static fn( $v ) => $v['published'] >= $cutoff && ! ( $shorts && true === $v['short'] ) );
+			usort( $videos, static fn( $a, $b ) => $b['published'] <=> $a['published'] );
+			foreach ( array_slice( $videos, 0, $per_channel ) as $v ) {
+				$out[] = $v + [ 'channel' => $ch ];
+			}
+		}
+		usort( $out, static fn( $a, $b ) => $b['published'] <=> $a['published'] );
+		return array_slice( $out, 0, $limit );
+	}
+
 	const OPTION_META = 'cn_channel_meta';
 
 	/**

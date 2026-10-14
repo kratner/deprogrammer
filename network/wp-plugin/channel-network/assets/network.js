@@ -20,7 +20,8 @@
 		return {
 			el: el, grid: grid, cards: cards, topOrder: cards.slice(), pageSize: size, shown: size,
 			more: el.querySelector('.cn-more-row'), empty: el.querySelector('.cn-filter-empty'),
-			sortable: el.hasAttribute('data-sortable'), hideWhenEmpty: el.hasAttribute('data-hide-empty')
+			sortable: el.hasAttribute('data-sortable'), hideWhenEmpty: el.hasAttribute('data-hide-empty'),
+			noLead: el.hasAttribute('data-no-lead')
 		};
 	});
 	/* ---- Analytics ---- */
@@ -40,7 +41,7 @@
 			video_title: link ? (link.getAttribute('data-title') || '').slice(0, 100) : '',
 			channel_name: ch ? ch.textContent.trim() : '',
 			category: card.getAttribute('data-cat') || '',
-			section: feed && feed.hasAttribute('data-sortable') ? 'latest' : 'watched',
+			section: !feed ? '' : feed.getAttribute('data-section') === 'latest' ? 'the_latest' : feed.hasAttribute('data-sortable') ? 'latest' : 'watched',
 			position: visible.indexOf(card) + 1,
 			is_lead: card.classList.contains('is-lead')
 		};
@@ -92,7 +93,7 @@
 		feeds.forEach(function (f) {
 			if (!f.grid) return;
 			var matching = f.cards.filter(matches);
-			var lead = !leadGiven && matching.length >= 3;
+			var lead = !f.noLead && !leadGiven && matching.length >= 3 && !document.documentElement.classList.contains('cn-compact');
 			f.cards.forEach(function (c) { c.hidden = true; c.classList.remove('is-lead'); });
 			matching.forEach(function (c, i) { c.hidden = i >= f.shown; });
 			if (lead) { matching[0].classList.add('is-lead'); upgradeLead(matching[0]); leadGiven = true; }
@@ -302,6 +303,8 @@
 	   Google Identity Services; the email option mails a single-use link. All writes go
 	   to /wp-json/channel-network/v1/ with the REST nonce WordPress issues per session. */
 	var CN = window.CN || {};
+	/* Shared with the layout block below: members save their layout to their account. */
+	var layoutHooks = { remote: null, onSignedIn: null };
 	if (CN.members && window.fetch) {
 		var me = CN.me || { loggedIn: false };
 		var nonce = CN.nonce || '';
@@ -417,6 +420,7 @@
 			me = j.me; nonce = j.nonce || nonce;
 			track(j.status === 'signed_up' ? 'sign_up' : 'login', { method: method });
 			closeAuth(); paint();
+			if (layoutHooks.onSignedIn) layoutHooks.onSignedIn(me);
 			toast(j.status === 'signed_up' ? 'Welcome! Follow channels and save videos as you go.' : 'Signed in.');
 		}
 
@@ -566,8 +570,156 @@
 			}
 		} catch (e) { /* ignore */ }
 
+		layoutHooks.remote = function (layout) {
+			if (!me.loggedIn) return;
+			api('layout', layout ? { layout: layout } : { reset: 1 });
+		};
+		layoutHooks.isMember = function () { return !!me.loggedIn; };
 		paint();
 		/* A ?cat=mine URL from a previous visit applies once follows are known. */
 		try { if (new URL(window.location.href).searchParams.get('cat') === 'mine' && follows.length) setFilter('mine', false); } catch (e) { /* ignore */ }
+	}
+
+	/* ---- "Edit this page": section order, hidden sections, start category, density ----
+	   Visitors' layouts live in this browser (localStorage); members' are saved to their
+	   account too, so the page looks the same on every device they sign in on. */
+	var mainEl = document.getElementById('cn-main');
+	var editBtn = document.querySelector('.cn-edit-btn');
+	var editSec = document.getElementById('cn-edit');
+	if (mainEl && editBtn && editSec) {
+		var LKEY = 'cn-layout-v1';
+		var list = editSec.querySelector('.cn-edit-list');
+		var catSel = editSec.querySelector('#cn-edit-cat');
+		var note = editSec.querySelector('.cn-edit-note');
+		var DEFAULT_ORDER = Array.prototype.map.call(list.children, function (li) { return li.getAttribute('data-key'); });
+		var saveTimer = null;
+
+		var readLocal = function () { try { return JSON.parse(window.localStorage.getItem(LKEY)); } catch (e) { return null; } };
+		var writeLocal = function (l) {
+			try { if (l) window.localStorage.setItem(LKEY, JSON.stringify(l)); else window.localStorage.removeItem(LKEY); } catch (e) { /* private mode: layout lasts for this visit */ }
+		};
+		function normalize(l) {
+			l = l && typeof l === 'object' ? l : {};
+			var order = (l.order || []).filter(function (k) { return DEFAULT_ORDER.indexOf(k) !== -1; });
+			DEFAULT_ORDER.forEach(function (k, i) { if (order.indexOf(k) === -1) order.splice(Math.min(i, order.length), 0, k); });
+			return {
+				order: order,
+				hidden: (l.hidden || []).filter(function (k) { return DEFAULT_ORDER.indexOf(k) !== -1; }),
+				cat: typeof l.cat === 'string' ? l.cat : 'all',
+				density: l.density === 'compact' ? 'compact' : 'cards'
+			};
+		}
+		var member = CN.me && CN.me.loggedIn;
+		var layout = normalize(member && CN.me.layout ? CN.me.layout : readLocal());
+		var isDefault = function (l) {
+			return l.order.join() === DEFAULT_ORDER.join() && !l.hidden.length && l.cat === 'all' && l.density === 'cards';
+		};
+
+		function apply() {
+			layout.order.forEach(function (k) {
+				var sec = mainEl.querySelector(':scope > [data-section="' + k + '"]');
+				if (sec) mainEl.appendChild(sec);
+			});
+			Array.prototype.forEach.call(mainEl.querySelectorAll(':scope > [data-section]'), function (sec) {
+				sec.classList.toggle('cn-user-hidden', layout.hidden.indexOf(sec.getAttribute('data-section')) !== -1);
+			});
+			document.documentElement.classList.toggle('cn-compact', layout.density === 'compact');
+			// panel controls
+			layout.order.forEach(function (k) { var li = list.querySelector('[data-key="' + k + '"]'); if (li) list.appendChild(li); });
+			Array.prototype.forEach.call(list.querySelectorAll('[data-show]'), function (cb) { cb.checked = layout.hidden.indexOf(cb.getAttribute('data-show')) === -1; });
+			var mineOpt = catSel.querySelector('[data-members-only]');
+			if (mineOpt) mineOpt.disabled = !(layoutHooks.isMember && layoutHooks.isMember());
+			catSel.value = layout.cat;
+			if (catSel.value !== layout.cat) catSel.value = 'all';
+			Array.prototype.forEach.call(editSec.querySelectorAll('[name="cn-density"]'), function (r) { r.checked = r.value === layout.density; });
+		}
+		function save(change, detail) {
+			var stored = isDefault(layout) ? null : layout;
+			writeLocal(stored);
+			if (layoutHooks.remote && layoutHooks.isMember && layoutHooks.isMember()) {
+				clearTimeout(saveTimer);
+				saveTimer = setTimeout(function () { layoutHooks.remote(stored); }, 600);
+			}
+			if (change) track('layout_change', Object.assign({ change: change }, detail || {}));
+		}
+		function setNote() {
+			var signedIn = layoutHooks.isMember && layoutHooks.isMember();
+			note.textContent = signedIn
+				? 'Changes save to your account automatically.'
+				: 'Changes save in this browser automatically.' + (CN.members ? ' Sign in to keep your layout on every device.' : '');
+		}
+
+		editBtn.addEventListener('click', function () {
+			var open = editSec.hidden;
+			editSec.hidden = !open;
+			editBtn.setAttribute('aria-expanded', String(open));
+			if (open) { setNote(); apply(); editSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); track('layout_edit_open'); }
+		});
+		editSec.querySelector('.cn-edit-done').addEventListener('click', function () {
+			editSec.hidden = true; editBtn.setAttribute('aria-expanded', 'false'); editBtn.focus();
+		});
+		editSec.querySelector('.cn-edit-reset').addEventListener('click', function () {
+			layout = normalize(null); apply(); save(); setFilter('all', true); track('layout_reset');
+		});
+		list.addEventListener('change', function (e) {
+			var k = e.target.getAttribute('data-show');
+			if (!k) return;
+			layout.hidden = layout.hidden.filter(function (h) { return h !== k; });
+			if (!e.target.checked) layout.hidden.push(k);
+			apply(); save(e.target.checked ? 'show' : 'hide', { section_key: k });
+		});
+		function readOrder() { layout.order = Array.prototype.map.call(list.children, function (li) { return li.getAttribute('data-key'); }); }
+		list.addEventListener('click', function (e) {
+			var b = e.target.closest('[data-move]');
+			if (!b) return;
+			var li = b.closest('li');
+			var dir = +b.getAttribute('data-move');
+			var sib = dir < 0 ? li.previousElementSibling : li.nextElementSibling;
+			if (!sib) return;
+			list.insertBefore(li, dir < 0 ? sib : sib.nextElementSibling);
+			readOrder(); apply(); save('order', { section_key: li.getAttribute('data-key') });
+			b.focus();
+		});
+		// Drag and drop (mouse); the arrow buttons cover touch and keyboard.
+		var dragged = null;
+		list.addEventListener('dragstart', function (e) {
+			dragged = e.target.closest('li'); if (!dragged) return;
+			dragged.classList.add('is-dragging');
+			try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragged.getAttribute('data-key')); } catch (err) { /* old browsers */ }
+		});
+		list.addEventListener('dragover', function (e) {
+			if (!dragged) return;
+			e.preventDefault();
+			var over = e.target.closest('li');
+			if (!over || over === dragged) return;
+			var r = over.getBoundingClientRect();
+			list.insertBefore(dragged, e.clientY > r.top + r.height / 2 ? over.nextElementSibling : over);
+		});
+		list.addEventListener('dragend', function () {
+			if (!dragged) return;
+			dragged.classList.remove('is-dragging');
+			var k = dragged.getAttribute('data-key'); dragged = null;
+			readOrder(); apply(); save('order', { section_key: k });
+		});
+		catSel.addEventListener('change', function () {
+			layout.cat = catSel.value; save('start_category', { category: layout.cat }); setFilter(layout.cat, true);
+		});
+		editSec.addEventListener('change', function (e) {
+			if (e.target.name !== 'cn-density') return;
+			layout.density = e.target.value; apply(); render(); save('density', { density: layout.density });
+		});
+
+		// After a sign-in without reload: an account layout wins; otherwise this browser's moves up.
+		layoutHooks.onSignedIn = function (m) {
+			if (m.layout) { layout = normalize(m.layout); apply(); }
+			else if (!isDefault(layout) && layoutHooks.remote) layoutHooks.remote(layout);
+			setNote();
+		};
+
+		apply();
+		// Start category, unless the URL already picked one.
+		try {
+			if (!new URL(window.location.href).searchParams.get('cat') && layout.cat !== 'all') setFilter(layout.cat, false);
+		} catch (e) { /* ignore */ }
 	}
 })();
