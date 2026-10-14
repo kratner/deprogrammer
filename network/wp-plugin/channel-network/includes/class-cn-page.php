@@ -48,11 +48,21 @@ final class CN_Page {
 		}
 		wp_enqueue_style( 'channel-network-inter', 'https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap', [], null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 		wp_enqueue_style( 'channel-network', CN_URL . 'assets/network.css', [ 'channel-network-inter' ], CN_VERSION );
+		if ( CN_Members::enabled() && CN_Members::google_client_id() && ! is_user_logged_in() ) {
+			wp_enqueue_script( 'google-gsi', 'https://accounts.google.com/gsi/client', [], null, [ 'strategy' => 'async', 'in_footer' => true ] ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+		}
 		wp_enqueue_script( 'channel-network', CN_URL . 'assets/network.js', [], CN_VERSION, [ 'strategy' => 'defer', 'in_footer' => true ] );
 		wp_localize_script(
 			'channel-network',
 			'CN',
-			[ 'suggestUrl' => esc_url_raw( rest_url( 'channel-network/v1/suggest' ) ) ]
+			[
+				'suggestUrl' => esc_url_raw( rest_url( 'channel-network/v1/suggest' ) ),
+				'rest'       => esc_url_raw( rest_url( 'channel-network/v1/' ) ),
+				'members'    => CN_Members::enabled(),
+				'clientId'   => CN_Members::google_client_id(),
+				'me'         => CN_Members::enabled() ? CN_Members::me() : [ 'loggedIn' => false ],
+				'nonce'      => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
+			]
 		);
 	}
 

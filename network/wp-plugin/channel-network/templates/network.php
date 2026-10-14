@@ -50,6 +50,19 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 		</div>
 		<div class="cn-top-actions">
 			<a class="cn-suggest-link" href="#cn-suggest"><?php esc_html_e( 'Suggest a channel', 'channel-network' ); ?></a>
+			<?php if ( CN_Members::enabled() ) : ?>
+				<button type="button" class="cn-signin" hidden><?php esc_html_e( 'Sign in', 'channel-network' ); ?></button>
+				<div class="cn-account" hidden>
+					<button type="button" class="cn-account-btn" aria-haspopup="true" aria-expanded="false" aria-label="<?php esc_attr_e( 'Your account', 'channel-network' ); ?>"><img alt="" width="32" height="32"></button>
+					<div class="cn-account-menu" role="menu" hidden>
+						<p class="cn-account-name"></p>
+						<button type="button" role="menuitem" data-act="mine"><?php esc_html_e( 'My network', 'channel-network' ); ?></button>
+						<button type="button" role="menuitem" data-act="saved"><?php esc_html_e( 'Saved videos', 'channel-network' ); ?></button>
+						<button type="button" role="menuitem" data-act="logout"><?php esc_html_e( 'Sign out', 'channel-network' ); ?></button>
+						<button type="button" role="menuitem" data-act="delete" class="cn-danger"><?php esc_html_e( 'Delete my account', 'channel-network' ); ?></button>
+					</div>
+				</div>
+			<?php endif; ?>
 			<button type="button" class="cn-theme" aria-label="<?php esc_attr_e( 'Switch between light and dark mode', 'channel-network' ); ?>" hidden>
 				<svg class="cn-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
 				<svg class="cn-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -58,6 +71,9 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 	</div>
 	<nav class="cn-wrap cn-filters-row" aria-label="<?php esc_attr_e( 'Filter by category', 'channel-network' ); ?>">
 		<button type="button" class="cn-chip" data-filter="all" aria-pressed="true"><?php esc_html_e( 'All', 'channel-network' ); ?></button>
+		<?php if ( CN_Members::enabled() ) : ?>
+			<button type="button" class="cn-chip cn-chip-mine" data-filter="mine" aria-pressed="false" hidden><?php esc_html_e( 'My network', 'channel-network' ); ?></button>
+		<?php endif; ?>
 		<?php foreach ( $cn_cats as $key => $label ) : ?>
 			<button type="button" class="cn-chip" data-filter="<?php echo esc_attr( $key ); ?>" aria-pressed="false"><?php echo esc_html( $label ); ?></button>
 		<?php endforeach; ?>
@@ -108,6 +124,7 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 					'id'             => $w['id'],
 					'title'          => $w['title'],
 					'cat'            => $w['channel']['category'],
+					'channel_id'     => $w['channel']['channelId'],
 					'cat_label'      => $cn_cats[ $w['channel']['category'] ] ?? '',
 					'ts'             => 0,
 					'avatar_channel' => $cn_own ? $w['channel'] : [ 'name' => $w['uploaderName'] ?? $w['channel']['name'], 'channelId' => $cn_up ],
@@ -141,6 +158,7 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 						'id'             => $v['id'],
 						'title'          => $v['title'],
 						'cat'            => $ch['category'],
+						'channel_id'     => $ch['channelId'],
 						'cat_label'      => $cn_cats[ $ch['category'] ] ?? '',
 						'ts'             => (int) $v['published'],
 						'avatar_channel' => $ch,
@@ -156,6 +174,13 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 			<p class="cn-empty cn-filter-empty" hidden><?php esc_html_e( 'No new videos in this category this week.', 'channel-network' ); ?></p>
 		<?php endif; ?>
 	</section>
+
+	<?php if ( CN_Members::enabled() ) : ?>
+	<section class="cn-wrap cn-section" id="cn-saved" aria-labelledby="cn-saved-h" hidden>
+		<div class="cn-stream-head"><h2 class="cn-h2" id="cn-saved-h"><?php esc_html_e( 'Saved for later', 'channel-network' ); ?></h2></div>
+		<ol class="cn-saved-list"></ol>
+	</section>
+	<?php endif; ?>
 
 	<section class="cn-wrap cn-section" id="cn-lineup" aria-labelledby="cn-lineup-h">
 		<h2 class="cn-h2" id="cn-lineup-h"><?php esc_html_e( 'The lineup', 'channel-network' ); ?></h2>
@@ -185,6 +210,9 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 										<?php endif; ?>
 									</span>
 								</a>
+								<?php if ( CN_Members::enabled() ) : ?>
+									<button type="button" class="cn-follow" aria-pressed="false" data-channel-id="<?php echo esc_attr( $c['channelId'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s channel */ __( 'Follow %s', 'channel-network' ), $c['name'] ) ); ?>"><span class="cn-follow-on"><?php esc_html_e( 'Follow', 'channel-network' ); ?></span><span class="cn-follow-off"><?php esc_html_e( 'Following', 'channel-network' ); ?></span></button>
+								<?php endif; ?>
 							</li>
 						<?php endforeach; ?>
 					</ul>
@@ -281,6 +309,33 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 		<p class="cn-fine"><?php esc_html_e( 'Videos, titles and thumbnails belong to their creators and play from YouTube. Inclusion in the network is not an endorsement of every video.', 'channel-network' ); ?></p>
 	</div>
 </footer>
+
+<?php if ( CN_Members::enabled() ) : ?>
+<dialog class="cn-auth" aria-labelledby="cn-auth-h">
+	<button type="button" class="cn-auth-close" aria-label="<?php esc_attr_e( 'Close', 'channel-network' ); ?>">×</button>
+	<h2 class="cn-auth-h" id="cn-auth-h"><?php esc_html_e( 'Join Deprogramming', 'channel-network' ); ?></h2>
+	<p class="cn-auth-sub"><?php esc_html_e( 'Follow the channels you like and save videos for later. Free, and no password to remember.', 'channel-network' ); ?></p>
+	<div class="cn-gsi" id="cn-gsi"></div>
+	<p class="cn-auth-or"><span><?php esc_html_e( 'or', 'channel-network' ); ?></span></p>
+	<form class="cn-auth-form" novalidate>
+		<label for="cn-auth-email"><?php esc_html_e( 'Email me a sign-in link', 'channel-network' ); ?></label>
+		<div class="cn-auth-row">
+			<input id="cn-auth-email" name="email" type="email" autocomplete="email" required maxlength="190" placeholder="you@example.com">
+			<button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send link', 'channel-network' ); ?></button>
+		</div>
+		<div class="cn-hp" aria-hidden="true"><label for="cn-auth-website">Website</label><input id="cn-auth-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+		<label class="cn-auth-check"><input type="checkbox" name="newsletter" id="cn-auth-newsletter" value="1"> <?php esc_html_e( 'Also email me the weekly roundup (you\'ll confirm by email; unsubscribe anytime)', 'channel-network' ); ?></label>
+		<p class="cn-auth-status" role="status" aria-live="polite"></p>
+	</form>
+	<p class="cn-auth-fine"><?php
+		$cn_pp = CN_Page::privacy_url();
+		esc_html_e( 'We store your name and email to run your account, plus the channels you follow and videos you save.', 'channel-network' );
+		if ( $cn_pp ) {
+			echo ' <a href="' . esc_url( $cn_pp ) . '">' . esc_html__( 'Privacy policy', 'channel-network' ) . '</a>';
+		}
+	?></p>
+</dialog>
+<?php endif; ?>
 
 <dialog class="cn-player" aria-label="<?php esc_attr_e( 'Video player', 'channel-network' ); ?>">
 	<div class="cn-player-inner">

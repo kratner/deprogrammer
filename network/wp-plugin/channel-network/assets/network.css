@@ -363,3 +363,114 @@ body.admin-bar .cn-top { top: 32px; }
 .cn-player-close:hover { background: #222; }
 .cn-player-frame { aspect-ratio: 16 / 9; }
 .cn-player-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* ---------- Members (only rendered when sign-in is enabled) ---------- */
+.cn-signin {
+	font: 600 13px/1 var(--cn-sans); color: var(--cn-accent-ink); background: var(--cn-accent); border: 0;
+	padding: 0 16px; min-height: 36px; border-radius: 999px; cursor: pointer;
+}
+.cn-signin:hover { filter: brightness(1.12); }
+.cn-account { position: relative; }
+.cn-account-btn { width: 36px; height: 36px; padding: 0; border: 1px solid var(--cn-line); border-radius: 50%; overflow: hidden; background: var(--cn-chip); cursor: pointer; display: block; }
+.cn-account-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cn-account-menu {
+	position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 210px; padding: 6px;
+	background: var(--cn-raised); border-radius: var(--cn-r); box-shadow: var(--cn-shadow), 0 0 0 1px var(--cn-line);
+}
+.cn-account-name { margin: 6px 10px 8px; font-size: 13px; font-weight: 650; color: var(--cn-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cn-account-menu button {
+	display: block; width: 100%; text-align: left; font: 500 14px/1.2 var(--cn-sans); color: var(--cn-ink);
+	background: none; border: 0; border-radius: 8px; padding: 10px; min-height: 40px; cursor: pointer;
+}
+.cn-account-menu button:hover { background: var(--cn-chip); }
+.cn-account-menu .cn-danger { color: var(--cn-err); }
+@media (max-width: 599px) { .cn-signin, .cn-account-btn { min-height: 40px; } .cn-account-btn { width: 40px; height: 40px; } }
+
+/* Save (bookmark) button: top-right of the thumbnail; top-left on phone rows */
+.cn-save {
+	position: absolute; top: 8px; right: 8px; z-index: 3; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
+	display: grid; place-items: center; cursor: pointer; color: #fff;
+	background: rgb(10 12 16 / 58%); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+	opacity: 0; transition: opacity .15s, background-color .15s;
+}
+.cn-save svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.cn-card:hover .cn-save, .cn-save:focus-visible, .cn-save[aria-pressed="true"] { opacity: 1; }
+.cn-save:hover { background: rgb(10 12 16 / 80%); }
+.cn-save[aria-pressed="true"] { background: var(--cn-accent); }
+.cn-save[aria-pressed="true"] svg { fill: currentColor; }
+.cn-card.is-lead .cn-save { top: 14px; right: 14px; width: 40px; height: 40px; }
+@media (hover: none) { .cn-save { opacity: 1; } }
+@media (max-width: 599px) {
+	.cn-card:not(.is-lead) .cn-save { top: 4px; right: auto; left: 4px; width: 32px; height: 32px; }
+	.cn-card:not(.is-lead) .cn-save svg { width: 15px; height: 15px; }
+}
+
+/* Follow toggles on lineup tiles */
+.cn-channels li { position: relative; }
+.cn-channels li:has(.cn-follow) .cn-channel { padding-right: 104px; }
+.cn-follow {
+	position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 1;
+	font: 600 12.5px/1 var(--cn-sans); padding: 0 12px; min-height: 32px; border-radius: 999px; cursor: pointer;
+	background: var(--cn-ink); color: var(--cn-bg); border: 1px solid var(--cn-ink);
+}
+.cn-follow:hover { background: var(--cn-accent); border-color: var(--cn-accent); color: var(--cn-accent-ink); }
+.cn-follow .cn-follow-off { display: none; }
+.cn-follow[aria-pressed="true"] { background: transparent; color: var(--cn-ink-2); border-color: var(--cn-line); }
+.cn-follow[aria-pressed="true"] .cn-follow-on { display: none; }
+.cn-follow[aria-pressed="true"] .cn-follow-off { display: inline; }
+.cn-follow[aria-pressed="true"] .cn-follow-off::before { content: "✓ "; color: var(--cn-accent); }
+@media (max-width: 599px) { .cn-follow { min-height: 40px; } }
+
+.cn-chip-mine[aria-pressed="false"] { box-shadow: inset 0 0 0 1px var(--cn-accent); color: var(--cn-accent); }
+
+/* Saved for later */
+.cn-saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.cn-saved-item { position: relative; display: flex; align-items: center; background: var(--cn-surface); border-radius: var(--cn-r); box-shadow: var(--cn-shadow-sm), 0 0 0 1px var(--cn-line); }
+.cn-saved-link { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center; padding: 8px; text-decoration: none; color: var(--cn-ink); }
+.cn-saved-link img { flex: none; width: 112px; height: 63px; object-fit: cover; border-radius: 8px; background: var(--cn-chip); }
+.cn-saved-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cn-saved-text strong { font-size: 14px; line-height: 1.35; font-weight: 650; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cn-saved-text span { font-size: 12.5px; color: var(--cn-muted); }
+.cn-saved-link:hover strong { color: var(--cn-accent); }
+.cn-saved-rm { flex: none; width: 44px; height: 44px; margin-right: 4px; border: 0; border-radius: 10px; background: none; color: var(--cn-muted); font-size: 22px; cursor: pointer; }
+.cn-saved-rm:hover { background: var(--cn-chip); color: var(--cn-ink); }
+
+/* Sign-in dialog */
+.cn-auth {
+	width: min(440px, calc(100vw - 32px)); max-width: none; padding: clamp(22px, 4vw, 32px); border: 0; border-radius: var(--cn-r-lg);
+	background: var(--cn-raised); color: var(--cn-ink); box-shadow: var(--cn-shadow); font-family: var(--cn-sans);
+}
+.cn-auth::backdrop { background: rgb(5 6 8 / 60%); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.cn-auth-close { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border: 0; border-radius: 10px; background: none; color: var(--cn-muted); font-size: 26px; line-height: 1; cursor: pointer; }
+.cn-auth-close:hover { background: var(--cn-chip); color: var(--cn-ink); }
+.cn-auth-h { margin: 0 0 6px; font-family: var(--cn-serif); font-size: 24px; line-height: 1.15; }
+.cn-auth-sub { margin: 0 0 20px; font-size: 14.5px; line-height: 1.5; color: var(--cn-ink-2); }
+.cn-gsi { min-height: 44px; display: flex; justify-content: center; }
+.cn-gsi[hidden] + .cn-auth-or { display: none; }
+.cn-auth-or { display: flex; align-items: center; gap: 12px; margin: 18px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--cn-muted); }
+.cn-auth-or::before, .cn-auth-or::after { content: ""; flex: 1; height: 1px; background: var(--cn-line); }
+.cn-auth-form > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.cn-auth-row { display: flex; gap: 8px; }
+.cn-auth-row input {
+	flex: 1; min-width: 0; font: 400 16px/1.2 var(--cn-sans); color: var(--cn-ink); background: var(--cn-surface);
+	border: 1px solid var(--cn-line); border-radius: 999px; padding: 0 16px; min-height: 44px;
+}
+.cn-auth-row input:focus { outline: 2px solid var(--cn-focus); outline-offset: 1px; }
+.cn-auth-row input[aria-invalid="true"] { border-color: var(--cn-err); }
+.cn-auth-check { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; font-size: 13px; line-height: 1.45; color: var(--cn-ink-2); cursor: pointer; }
+.cn-auth-check input { margin-top: 2px; width: 16px; height: 16px; accent-color: var(--cn-accent); flex: none; }
+.cn-auth-status { min-height: 1.4em; margin: 10px 0 0; font-size: 13.5px; }
+.cn-auth-status.is-ok { color: var(--cn-ok); }
+.cn-auth-status.is-error { color: var(--cn-err); }
+.cn-auth-fine { margin: 14px 0 0; font-size: 12px; line-height: 1.5; color: var(--cn-muted); }
+.cn-auth-fine a { color: inherit; }
+@media (max-width: 420px) { .cn-auth-row { flex-direction: column; } }
+
+/* Toast */
+.cn-toast {
+	position: fixed; left: 50%; bottom: 24px; z-index: 100; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+	max-width: calc(100vw - 32px); padding: 12px 18px; border-radius: 12px; font: 500 14px/1.4 var(--cn-sans);
+	background: var(--cn-ink); color: var(--cn-bg); box-shadow: var(--cn-shadow); transition: opacity .2s, transform .2s;
+}
+.cn-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .cn-save, .cn-toast { transition: none; } }

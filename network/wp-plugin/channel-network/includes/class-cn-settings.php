@@ -24,6 +24,8 @@ final class CN_Settings {
 			'max_age_days'    => 7,      // older videos drop out of the stream
 			'exclude_shorts'  => 1,
 			'field_guide'     => 0,      // "Know the hooks before you watch" section; on hold (Keith, 2026-10-13)
+			'members_enabled' => 0,      // member sign-in (Google / email link), follows, saves
+			'google_client_id' => '',    // OAuth client for Google sign-in; empty = Site Kit's Sign in with Google client
 		];
 	}
 
@@ -35,7 +37,7 @@ final class CN_Settings {
 	public static function get( $key ) {
 		$all = self::all();
 		$v   = $all[ $key ] ?? null;
-		if ( in_array( $key, [ 'refresh_minutes', 'per_channel', 'max_age_days', 'exclude_shorts', 'habit_strength', 'field_guide' ], true ) ) {
+		if ( in_array( $key, [ 'refresh_minutes', 'per_channel', 'max_age_days', 'exclude_shorts', 'habit_strength', 'field_guide', 'members_enabled' ], true ) ) {
 			$v = (int) $v;
 		}
 		if ( 'refresh_minutes' === $key ) {
@@ -70,6 +72,9 @@ final class CN_Settings {
 		$out['habit_strength']  = max( 0, min( 30, absint( $input['habit_strength'] ?? $d['habit_strength'] ) ) );
 		$out['exclude_shorts']  = empty( $input['exclude_shorts'] ) ? 0 : 1;
 		$out['field_guide']     = empty( $input['field_guide'] ) ? 0 : 1;
+		$out['members_enabled'] = empty( $input['members_enabled'] ) ? 0 : 1;
+		$gid = trim( (string) ( $input['google_client_id'] ?? '' ) );
+		$out['google_client_id'] = preg_match( '/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/', $gid ) ? $gid : '';
 		// An empty key field means "keep the saved key"; a lone "-" clears it.
 		$key = trim( (string) ( $input['api_key'] ?? '' ) );
 		if ( '-' === $key ) {

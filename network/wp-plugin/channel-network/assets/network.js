@@ -80,11 +80,18 @@
 	}
 
 	/* ---- Filtering + paging ---- */
+	/* "mine" = channels the signed-in member follows (set by the members block below). */
+	var follows = [];
+	function matches(c) {
+		if (current === 'all') return true;
+		if (current === 'mine') return follows.indexOf(c.getAttribute('data-ch')) !== -1;
+		return c.getAttribute('data-cat') === current;
+	}
 	function render() {
 		var leadGiven = false;
 		feeds.forEach(function (f) {
 			if (!f.grid) return;
-			var matching = f.cards.filter(function (c) { return current === 'all' || c.getAttribute('data-cat') === current; });
+			var matching = f.cards.filter(matches);
 			var lead = !leadGiven && matching.length >= 3;
 			f.cards.forEach(function (c) { c.hidden = true; c.classList.remove('is-lead'); });
 			matching.forEach(function (c, i) { c.hidden = i >= f.shown; });
@@ -93,7 +100,7 @@
 			if (f.empty) f.empty.hidden = matching.length > 0;
 			if (f.hideWhenEmpty) f.el.hidden = matching.length === 0;
 		});
-		groups.forEach(function (g) { g.hidden = current !== 'all' && g.getAttribute('data-cat') !== current; });
+		groups.forEach(function (g) { g.hidden = current !== 'all' && current !== 'mine' && g.getAttribute('data-cat') !== current; });
 		chips.forEach(function (ch) { ch.setAttribute('aria-pressed', String(ch.getAttribute('data-filter') === current)); });
 	}
 
@@ -120,7 +127,7 @@
 	}
 
 	function setFilter(cat, push) {
-		var valid = chips.some(function (ch) { return ch.getAttribute('data-filter') === cat; });
+		var valid = chips.some(function (ch) { return ch.getAttribute('data-filter') === cat && !ch.hidden; });
 		current = valid ? cat : 'all';
 		feeds.forEach(function (f) { f.shown = f.pageSize; });
 		render();
@@ -288,5 +295,253 @@
 				.catch(function () { track('suggest_channel', { result: 'network_error' }); show('Couldn’t reach the server. Please try again.', false); })
 				.then(function () { button.disabled = false; });
 		});
+	}
+
+	/* ---- Members: sign-in, follow channels, save videos ----
+	   Only present when the admin has turned sign-in on (CN.members). Google sign-in uses
+	   Google Identity Services; the email option mails a single-use link. All writes go
+	   to /wp-json/channel-network/v1/ with the REST nonce WordPress issues per session. */
+	var CN = window.CN || {};
+	if (CN.members && window.fetch) {
+		var me = CN.me || { loggedIn: false };
+		var nonce = CN.nonce || '';
+		var signinBtn = document.querySelector('.cn-signin');
+		var account = document.querySelector('.cn-account');
+		var accountBtn = account && account.querySelector('.cn-account-btn');
+		var menu = account && account.querySelector('.cn-account-menu');
+		var mineChip = document.querySelector('.cn-chip-mine');
+		var savedSec = document.getElementById('cn-saved');
+		var savedList = savedSec && savedSec.querySelector('.cn-saved-list');
+		var auth = document.querySelector('.cn-auth');
+		var gsiDrawn = false;
+
+		var api = function (path, body) {
+			var headers = { 'Content-Type': 'application/json' };
+			if (nonce) headers['X-WP-Nonce'] = nonce;
+			return fetch(CN.rest + path, { method: 'POST', credentials: 'same-origin', headers: headers, body: JSON.stringify(body || {}) })
+				.then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+		};
+		var toast = function (msg) {
+			var t = document.querySelector('.cn-toast');
+			if (!t) { t = document.createElement('div'); t.className = 'cn-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+			t.textContent = msg; t.classList.add('is-on');
+			clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('is-on'); }, 3200);
+		};
+		var savedIds = function () { return (me.saved || []).map(function (s) { return s.id; }); };
+
+		function paint() {
+			var on = !!me.loggedIn;
+			if (signinBtn) signinBtn.hidden = on;
+			if (account) {
+				account.hidden = !on;
+				if (on) {
+					var img = accountBtn.querySelector('img');
+					if (me.avatar) img.src = me.avatar;
+					account.querySelector('.cn-account-name').textContent = me.name || '';
+					var del = menu.querySelector('[data-act="delete"]');
+					if (del) del.hidden = !me.isMember;
+				}
+			}
+			follows = on ? (me.follows || []) : [];
+			document.querySelectorAll('.cn-follow').forEach(function (b) {
+				b.setAttribute('aria-pressed', String(follows.indexOf(b.getAttribute('data-channel-id')) !== -1));
+			});
+			var ids = on ? savedIds() : [];
+			document.querySelectorAll('.cn-save').forEach(function (b) {
+				var s = ids.indexOf(b.getAttribute('data-video')) !== -1;
+				b.setAttribute('aria-pressed', String(s));
+				b.setAttribute('aria-label', s ? 'Remove from saved' : 'Save for later');
+			});
+			if (mineChip) mineChip.hidden = !on || follows.length === 0;
+			if (current === 'mine' && (!on || follows.length === 0)) current = 'all';
+			paintSaved();
+			render();
+		}
+
+		function paintSaved() {
+			if (!savedSec) return;
+			var list = me.loggedIn ? (me.saved || []) : [];
+			savedSec.hidden = list.length === 0;
+			savedList.textContent = '';
+			list.forEach(function (s) {
+				var li = document.createElement('li');
+				li.className = 'cn-saved-item';
+				var a = document.createElement('a');
+				a.className = 'cn-saved-link';
+				a.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(s.id);
+				a.target = '_blank'; a.rel = 'noopener';
+				a.setAttribute('data-video', s.id);
+				a.setAttribute('data-title', s.title || '');
+				var img = document.createElement('img');
+				img.src = 'https://i.ytimg.com/vi/' + encodeURIComponent(s.id) + '/mqdefault.jpg';
+				img.alt = ''; img.loading = 'lazy'; img.width = 160; img.height = 90;
+				var txt = document.createElement('span');
+				txt.className = 'cn-saved-text';
+				var tt = document.createElement('strong'); tt.textContent = s.title || 'Untitled';
+				var cc = document.createElement('span'); cc.textContent = s.channel || '';
+				txt.appendChild(tt); txt.appendChild(cc);
+				a.appendChild(img); a.appendChild(txt);
+				var rm = document.createElement('button');
+				rm.type = 'button'; rm.className = 'cn-saved-rm'; rm.textContent = '×';
+				rm.setAttribute('aria-label', 'Remove ' + (s.title || 'video') + ' from saved');
+				rm.addEventListener('click', function () { toggleSave(s.id, false, s); });
+				li.appendChild(a); li.appendChild(rm);
+				savedList.appendChild(li);
+			});
+		}
+
+		function openAuth(reason) {
+			if (!auth) return;
+			if (typeof auth.showModal === 'function') auth.showModal(); else auth.setAttribute('open', '');
+			track('login_prompt', { reason: reason || 'button' });
+			drawGsi();
+		}
+		function closeAuth() { if (auth && auth.open) auth.close(); }
+
+		function signedIn(j, method) {
+			me = j.me; nonce = j.nonce || nonce;
+			track(j.status === 'signed_up' ? 'sign_up' : 'login', { method: method });
+			closeAuth(); paint();
+			toast(j.status === 'signed_up' ? 'Welcome! Follow channels and save videos as you go.' : 'Signed in.');
+		}
+
+		function drawGsi() {
+			var slot = document.getElementById('cn-gsi');
+			if (gsiDrawn || !slot || !CN.clientId) { if (slot && !CN.clientId) slot.hidden = true; return; }
+			var g = window.google && window.google.accounts && window.google.accounts.id;
+			if (!g) { setTimeout(drawGsi, 300); return; }
+			gsiDrawn = true;
+			g.initialize({
+				client_id: CN.clientId,
+				callback: function (resp) {
+					var nl = document.getElementById('cn-auth-newsletter');
+					api('auth/google', { credential: resp.credential, newsletter: nl && nl.checked ? 1 : 0 }).then(function (j) {
+						if (j.ok) signedIn(j, 'google');
+						else authStatus(j.message || 'Google sign-in failed. Please try again.', false);
+					}).catch(function () { authStatus('Couldn’t reach the server. Please try again.', false); });
+				}
+			});
+			var dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+				(!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+			g.renderButton(slot, { theme: dark ? 'filled_black' : 'outline', size: 'large', text: 'continue_with', shape: 'pill', width: Math.min(320, slot.clientWidth || 320) });
+		}
+
+		var authForm = auth && auth.querySelector('.cn-auth-form');
+		var authStatusEl = auth && auth.querySelector('.cn-auth-status');
+		function authStatus(msg, ok) {
+			if (!authStatusEl) return;
+			authStatusEl.textContent = msg;
+			authStatusEl.className = 'cn-auth-status ' + (ok ? 'is-ok' : 'is-error');
+		}
+		if (authForm) authForm.addEventListener('submit', function (e) {
+			e.preventDefault();
+			var email = authForm.querySelector('[name="email"]');
+			if (!email.value.trim() || !email.checkValidity()) {
+				email.setAttribute('aria-invalid', 'true'); email.focus();
+				authStatus('Please enter a valid email address.', false); return;
+			}
+			email.removeAttribute('aria-invalid');
+			var btn = authForm.querySelector('button[type="submit"]');
+			btn.disabled = true; authStatus('Sending…', true);
+			api('auth/email', {
+				email: email.value.trim(),
+				website: authForm.querySelector('[name="website"]').value,
+				newsletter: authForm.querySelector('[name="newsletter"]').checked ? 1 : 0
+			}).then(function (j) {
+				track('login_link_requested', { result: j.status || (j.ok ? 'sent' : 'error') });
+				authStatus(j.message || (j.ok ? 'Check your inbox.' : 'Something went wrong. Please try again.'), !!j.ok);
+			}).catch(function () { authStatus('Couldn’t reach the server. Please try again.', false); })
+				.then(function () { btn.disabled = false; });
+		});
+		if (auth) {
+			auth.querySelector('.cn-auth-close').addEventListener('click', closeAuth);
+			auth.addEventListener('click', function (e) { if (e.target === auth) closeAuth(); });
+		}
+		if (signinBtn) signinBtn.addEventListener('click', function () { openAuth('button'); });
+
+		/* Account menu */
+		if (accountBtn) {
+			var setMenu = function (open) { menu.hidden = !open; accountBtn.setAttribute('aria-expanded', String(open)); };
+			accountBtn.addEventListener('click', function (e) { e.stopPropagation(); setMenu(menu.hidden); });
+			document.addEventListener('click', function (e) { if (!account.contains(e.target)) setMenu(false); });
+			document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+			menu.addEventListener('click', function (e) {
+				var b = e.target.closest('[data-act]');
+				if (!b) return;
+				setMenu(false);
+				var act = b.getAttribute('data-act');
+				if (act === 'mine') {
+					if (!follows.length) { toast('Follow a few channels in the lineup below first.'); document.getElementById('cn-lineup').scrollIntoView({ behavior: 'smooth' }); return; }
+					setFilter('mine', true); window.scrollTo({ top: 0, behavior: 'smooth' });
+				} else if (act === 'saved') {
+					if (savedSec && !savedSec.hidden) savedSec.scrollIntoView({ behavior: 'smooth' });
+					else toast('Nothing saved yet. Use the bookmark on any video.');
+				} else if (act === 'logout') {
+					api('auth/logout').then(function () { track('logout'); window.location.reload(); });
+				} else if (act === 'delete') {
+					if (!window.confirm('Delete your Deprogramming account? Your follows and saved videos are removed for good.')) return;
+					api('account/delete').then(function (j) {
+						if (j.ok) { track('account_delete'); window.location.reload(); } else toast(j.message || 'Could not delete the account.');
+					});
+				}
+			});
+		}
+
+		/* Follow + save (signed-out clicks open the sign-in dialog) */
+		function toggleSave(id, save, info) {
+			api('save', { videoId: id, save: save ? 1 : 0, title: info.title || '', channel: info.channel || '', channelId: info.channelId || '' }).then(function (j) {
+				if (!j.ok) { toast(j.message || 'Could not update saved videos.'); return; }
+				me.saved = j.saved; paint();
+				track(save ? 'save_video' : 'unsave_video', { video_id: id, channel_name: info.channel || '' });
+				toast(save ? 'Saved for later.' : 'Removed from saved.');
+			});
+		}
+		document.addEventListener('click', function (e) {
+			var sv = e.target.closest('.cn-save');
+			var fl = e.target.closest('.cn-follow');
+			if (!sv && !fl) return;
+			e.preventDefault(); e.stopPropagation();
+			if (!me.loggedIn) { openAuth(sv ? 'save' : 'follow'); return; }
+			if (sv) {
+				toggleSave(sv.getAttribute('data-video'), sv.getAttribute('aria-pressed') !== 'true', {
+					title: sv.getAttribute('data-title'), channel: sv.getAttribute('data-channel'), channelId: sv.getAttribute('data-channel-id')
+				});
+			} else {
+				var id = fl.getAttribute('data-channel-id');
+				var on = fl.getAttribute('aria-pressed') !== 'true';
+				fl.setAttribute('aria-pressed', String(on)); // optimistic
+				api('follow', { channelId: id, follow: on ? 1 : 0 }).then(function (j) {
+					if (!j.ok) { toast(j.message || 'Could not update follows.'); paint(); return; }
+					me.follows = j.follows; paint();
+					var tile = fl.closest('li');
+					var nm = tile && tile.querySelector('.cn-channel-name');
+					track(on ? 'follow_channel' : 'unfollow_channel', { channel_id: id, channel_name: nm ? nm.textContent.trim() : '' });
+				});
+			}
+		}, true);
+
+		/* Notices after following an emailed sign-in link (?signin=…) */
+		try {
+			var u = new URL(window.location.href);
+			var si = u.searchParams.get('signin');
+			if (si) {
+				var notes = {
+					welcome: 'Welcome! You’re signed in. Follow channels and save videos as you go.',
+					ok: 'You’re signed in.',
+					expired: 'That sign-in link expired or was already used. Request a new one.',
+					failed: 'Sign-in failed. Please try again.',
+					staff: 'That address belongs to a staff account. Use the regular WordPress login.'
+				};
+				if (notes[si]) toast(notes[si]);
+				if (si === 'welcome' || si === 'ok') track(si === 'welcome' ? 'sign_up' : 'login', { method: 'email' });
+				if (si === 'expired' || si === 'failed') openAuth('link_' + si);
+				u.searchParams.delete('signin');
+				history.replaceState(null, '', u);
+			}
+		} catch (e) { /* ignore */ }
+
+		paint();
+		/* A ?cat=mine URL from a previous visit applies once follows are known. */
+		try { if (new URL(window.location.href).searchParams.get('cat') === 'mine' && follows.length) setFilter('mine', false); } catch (e) { /* ignore */ }
 	}
 })();
