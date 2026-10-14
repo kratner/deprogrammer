@@ -1,0 +1,14 @@
+<!-- @dsCard group="Video" height=300 subtitle="Opening and chapter card, 1920x1080" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Inter:wght@400..800&display=swap">
+<style>
+.f{position:relative;aspect-ratio:16/9;max-width:640px;margin:16px;background:var(--cinema-black);overflow:hidden;container-type:inline-size}
+.rule{position:absolute;left:5cqw;top:calc(50% - 15cqw);width:8cqw;height:calc(6/1920*100cqw);background:var(--brand-green-bright)}
+.k{position:absolute;left:5cqw;top:calc(50% - 12cqw);font:600 calc(28/1920*100cqw)/1 var(--font-display);letter-spacing:calc(6/1920*100cqw);color:var(--parchment);text-transform:uppercase}
+.t{position:absolute;left:5cqw;top:calc(50% - 8cqw);width:70cqw;font:700 calc(132/1920*100cqw)/.95 var(--font-display);color:var(--caption-ink);text-transform:uppercase}
+.d{position:absolute;left:5cqw;bottom:5cqw;font:500 calc(30/1920*100cqw)/1 var(--font-sans);color:var(--parchment)}
+.disc{position:absolute;right:-8cqw;top:50%;width:44cqw;height:44cqw;margin-top:-22cqw;border-radius:50%;border:calc(3/1920*100cqw) solid var(--brand-green-deep)}
+.disc.in{width:28cqw;height:28cqw;margin-top:-14cqw;right:0;border-color:var(--brand-green-bright)}
+@media (prefers-reduced-motion:no-preference){.t,.k,.rule{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}.k{animation-delay:.1s}.t{animation-delay:.2s}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+</style>
+<div class="f"><span class="disc"></span><span class="disc in"></span><span class="rule"></span><span class="k">Deprogramming · weekly roundup</span><span class="t">This week on the network</span><span class="d">October 7-13 · deprogrammer.org/network</span></div>

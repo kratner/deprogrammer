@@ -11,3 +11,10 @@
 .DS_Store
 .env
 npm-debug.log
+
+# Deprogramming network: personal data, server notes and generated files stay local
+/CLAUDE.md
+/network/private/
+/network/dev/fixtures/
+/network/wp-plugin/channel-network/data/
+.DS_Store

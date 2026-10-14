@@ -1,0 +1,22 @@
+<!-- @dsCard group="Thumbnails" height=330 subtitle="Promo thumbnail, 1280x720, with the signature outline" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Inter:wght@400..800&display=swap">
+<style>
+.wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;padding:16px;background:var(--surface);font-family:var(--font-sans)}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+figcaption{font:500 12px/1.3 var(--font-sans);color:var(--muted)}
+figcaption b{color:var(--ink)}
+.th{position:relative;aspect-ratio:16/9;background:var(--cinema-black);overflow:hidden;container-type:inline-size}
+.th::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 calc(14 / 1280 * 100cqw) var(--o,transparent)}
+.ring{position:absolute;border-radius:50%;border:calc(10/1280*100cqw) solid var(--brand-green-deep);opacity:.9}
+.r1{width:70cqw;height:70cqw;right:-24cqw;top:-10cqw}
+.r2{width:46cqw;height:46cqw;right:-12cqw;top:2cqw;border-color:var(--brand-green-bright)}
+.r3{width:22cqw;height:22cqw;right:0cqw;top:14cqw;background:var(--brand-green-deep);border:0}
+.k{position:absolute;left:7cqw;top:9cqw;font:600 calc(26/1280*100cqw)/1 var(--font-display);letter-spacing:calc(5/1280*100cqw);color:var(--parchment);text-transform:uppercase}
+.h{position:absolute;left:7cqw;bottom:9cqw;width:62cqw;font:800 calc(120/1280*100cqw)/.9 var(--font-display);color:var(--caption-ink);text-transform:uppercase}
+.m{position:absolute;right:4cqw;bottom:6cqw;width:9cqw}
+</style>
+<div class="wrap">
+  <figure><div class="th" style="--o:var(--signal-magenta)"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="k">Deprogramming</span><span class="h">The week in 60 seconds</span><img class="m" src="/_blob/0e0780a9dbd4e252a19fc1851fc26036" alt=""></div><figcaption><b>Signal magenta</b> · proposed default</figcaption></figure>
+  <figure><div class="th" style="--o:#ffb000"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="k">Deprogramming</span><span class="h">Who explained it best</span><img class="m" src="/_blob/0e0780a9dbd4e252a19fc1851fc26036" alt=""></div><figcaption><b>Amber</b> · alternative to test (close to the yellow text many thumbnails use)</figcaption></figure>
+  <figure><div class="th"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="k">Deprogramming</span><span class="h">The week in 60 seconds</span><img class="m" src="/_blob/0e0780a9dbd4e252a19fc1851fc26036" alt=""></div><figcaption><b>No outline</b> · the control for the click-through test</figcaption></figure>
+</div>

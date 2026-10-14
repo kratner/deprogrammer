@@ -1,0 +1,16 @@
+<!-- @dsCard group="Video" height=460 subtitle="Shorts layout, 1080x1920, with YouTube's UI zones" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Inter:wght@400..800&display=swap">
+<style>
+.wrap{display:flex;gap:24px;padding:16px;align-items:flex-start;flex-wrap:wrap}
+.s{position:relative;width:225px;aspect-ratio:9/16;background:var(--cinema-black);overflow:hidden;container-type:inline-size;box-shadow:inset 0 0 0 calc(14/1080*100cqw) var(--signal-magenta)}
+.k{position:absolute;left:8cqw;top:14cqw;font:600 calc(40/1080*100cqw)/1 var(--font-display);letter-spacing:calc(6/1080*100cqw);color:var(--parchment);text-transform:uppercase}
+.t{position:absolute;left:8cqw;top:22cqw;width:80cqw;font:800 calc(140/1080*100cqw)/.9 var(--font-display);color:var(--caption-ink);text-transform:uppercase}
+.cap{position:absolute;left:8cqw;right:16cqw;top:55%;text-align:center;font:600 calc(60/1080*100cqw)/1.25 var(--font-sans);color:var(--caption-ink)}
+.cap span{background:var(--caption-plate);padding:0 1.5cqw;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.ui{position:absolute;background:repeating-linear-gradient(45deg,rgba(255,46,147,.18) 0 6px,transparent 6px 12px);border-top:1px dashed var(--signal-magenta)}
+.bottom{left:0;right:0;bottom:0;height:calc(420/1920*100%)}
+.right{right:0;width:calc(140/1080*100%);top:45%;bottom:calc(420/1920*100%);border-top:0;border-left:1px dashed var(--signal-magenta)}
+.note{font:500 13px/1.45 var(--font-sans);color:var(--ink-2);max-width:280px}
+.note b{color:var(--ink)}
+</style>
+<div class="wrap"><div class="s"><span class="k">Deprogramming</span><span class="t">Who explained it best</span><p class="cap"><span>Three courts ruled on it this week.</span></p><span class="ui bottom"></span><span class="ui right"></span></div><p class="note"><b>Hatched areas</b> are covered by YouTube's own buttons, title and channel name: keep text and faces out of them. The magenta inset is the signature outline, kept on the Shorts cover frame.</p></div>
