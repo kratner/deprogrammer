@@ -18,6 +18,15 @@ final class CN_Page {
 	public static function init() {
 		add_filter( 'template_include', [ __CLASS__, 'template' ], 99 );
 		add_action( 'wp_enqueue_scripts', [ __CLASS__, 'assets' ], 100 );
+		// Site Kit's own "Sign in with Google" registers on template_redirect and would
+		// initialise Google Identity Services a second time with its own callback; only the
+		// last initialiser wins, so a member's sign-in could go to Site Kit instead of us.
+		add_filter(
+			'googlesitekit_sign-in-with-google_tag_blocked',
+			static function ( $blocked ) {
+				return ( CN_Members::enabled() && self::is_network_page() ) ? true : $blocked;
+			}
+		);
 	}
 
 	public static function is_network_page() {
