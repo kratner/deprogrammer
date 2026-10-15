@@ -378,11 +378,12 @@ body.admin-bar .cn-top { top: 32px; }
 	background: var(--cn-raised); border-radius: var(--cn-r); box-shadow: var(--cn-shadow), 0 0 0 1px var(--cn-line);
 }
 .cn-account-name { margin: 6px 10px 8px; font-size: 13px; font-weight: 650; color: var(--cn-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cn-account-menu button {
+.cn-account-menu button, .cn-account-menu a {
 	display: block; width: 100%; text-align: left; font: 500 14px/1.2 var(--cn-sans); color: var(--cn-ink);
 	background: none; border: 0; border-radius: 8px; padding: 10px; min-height: 40px; cursor: pointer;
 }
-.cn-account-menu button:hover { background: var(--cn-chip); }
+.cn-account-menu a { text-decoration: none; }
+.cn-account-menu button:hover, .cn-account-menu a:hover { background: var(--cn-chip); }
 .cn-account-menu .cn-danger { color: var(--cn-err); }
 @media (max-width: 599px) { .cn-signin, .cn-account-btn { min-height: 40px; } .cn-account-btn { width: 40px; height: 40px; } }
 
@@ -561,3 +562,21 @@ body.admin-bar .cn-top { top: 32px; }
 .cn-compact .cn-feed:not(.cn-rail-section) .cn-play { width: 34px; height: 34px; }
 .cn-compact .cn-feed:not(.cn-rail-section) .cn-play::after { left: 13px; top: 10px; border-width: 7px 0 7px 11px; }
 .cn-compact .cn-feed:not(.cn-rail-section) .cn-save { top: 4px; right: auto; left: 4px; width: 32px; height: 32px; }
+
+/* ---------- Support (Ko-fi) ---------- */
+.cn-support-link {
+	display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: var(--cn-ink);
+	padding: 0 12px; min-height: 36px; border-radius: 999px; border: 1px solid var(--cn-line); background: var(--cn-surface);
+}
+.cn-support-link:hover { border-color: var(--cn-ink); }
+.cn-support-link svg { width: 15px; height: 15px; fill: #ff5e6c; }
+@media (max-width: 599px) { .cn-support-link { min-height: 40px; padding: 0 10px; font-size: 0; gap: 0; } .cn-support-link svg { width: 18px; height: 18px; } }
+.cn-support-band {
+	display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px;
+	margin: clamp(24px, 4vw, 40px) 0 clamp(24px, 4vw, 40px); padding: clamp(16px, 2.5vw, 22px) clamp(16px, 2.5vw, 26px);
+	background: var(--cn-surface); border-radius: var(--cn-r-lg); box-shadow: var(--cn-shadow-sm), 0 0 0 1px var(--cn-line);
+}
+.cn-support-band p { margin: 0; max-width: 62ch; font-size: 15px; line-height: 1.5; color: var(--cn-ink-2); }
+.cn-support-band a.cn-btn { display: inline-flex; align-items: center; text-decoration: none; }
+.cn-support-band a.cn-btn-primary, .cn-support-band a.cn-btn-primary:visited { color: var(--cn-bg); }
+.cn-support-band a.cn-btn-primary:hover { color: var(--cn-accent-ink); }

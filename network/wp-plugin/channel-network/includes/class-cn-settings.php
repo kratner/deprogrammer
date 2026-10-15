@@ -25,6 +25,7 @@ final class CN_Settings {
 			'exclude_shorts'  => 1,
 			'field_guide'     => 0,      // "Know the hooks before you watch" section; on hold (Keith, 2026-10-13)
 			'members_enabled' => 0,      // member sign-in (Google / email link), follows, saves
+			'support_url'      => '',    // Ko-fi (or other) support page; empty = no support links
 			'google_client_id' => '',    // OAuth client for Google sign-in; empty = Site Kit's Sign in with Google client
 		];
 	}
@@ -73,6 +74,8 @@ final class CN_Settings {
 		$out['exclude_shorts']  = empty( $input['exclude_shorts'] ) ? 0 : 1;
 		$out['field_guide']     = empty( $input['field_guide'] ) ? 0 : 1;
 		$out['members_enabled'] = empty( $input['members_enabled'] ) ? 0 : 1;
+		$sup = esc_url_raw( trim( (string) ( $input['support_url'] ?? '' ) ), [ 'https' ] );
+		$out['support_url'] = 0 === strpos( $sup, 'https://' ) ? $sup : '';
 		$gid = trim( (string) ( $input['google_client_id'] ?? '' ) );
 		$out['google_client_id'] = preg_match( '/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/', $gid ) ? $gid : '';
 		// An empty key field means "keep the saved key"; a lone "-" clears it.
