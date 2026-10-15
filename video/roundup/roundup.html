@@ -1,0 +1,192 @@
+<!doctype html>
+<!--
+  FILE: roundup.html
+  PATH: video/roundup/roundup.html
+
+  Weekly roundup composition, 1920x1080. render.mjs loads it with ?data=<path to data.json>,
+  waits for window.__ready, then steps window.__seek(seconds) frame by frame and screenshots.
+  Every motion is a CSS animation with an absolute delay, so seeking is exact and every
+  render of the same data is identical. Open it in a browser with ?data=… and ?play to preview.
+
+  Scenes (seconds, computed from the data in build()):
+    title card → by the numbers → one scene per topic → what the curator watched → end screen
+  Brand: brand/tokens.json and brand/components/* (TitleCard, LowerThird, EndScreen).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Deprogramming · weekly roundup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=block">
+<style>
+:root {
+	--cinema-black: #07080a; --caption-ink: #ffffff; --caption-plate: rgba(7, 8, 10, .78);
+	--parchment: #c2b59b; --green-deep: #046937; --green-bright: #4db748;
+	--display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+	--sans: Inter, system-ui, sans-serif;
+	--ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--cinema-black); }
+body { font-family: var(--sans); color: var(--caption-ink); -webkit-font-smoothing: antialiased; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: radial-gradient(1200px 900px at 78% 40%, #0d1410 0%, var(--cinema-black) 60%); }
+
+/* The logo's concentric rings, drifting slowly for the whole video */
+.rings { position: absolute; right: -260px; top: 50%; width: 1100px; height: 1100px; margin-top: -550px; animation: drift var(--total) linear both; }
+.rings i { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--green-deep); }
+.rings i:nth-child(2) { inset: 170px; border-color: var(--green-bright); opacity: .55; }
+.rings i:nth-child(3) { inset: 340px; border-color: var(--parchment); opacity: .25; }
+@keyframes drift { from { transform: rotate(0) scale(1); } to { transform: rotate(24deg) scale(1.12); } }
+
+.scene { position: absolute; inset: 0; opacity: 0; animation: scene var(--dur) linear both; animation-delay: var(--at); }
+@keyframes scene { 0% { opacity: 0; } 3% { opacity: 1; } 96% { opacity: 1; } 100% { opacity: 0; } }
+.rise { opacity: 0; animation: rise .7s var(--ease) both; animation-delay: var(--at); }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.grow { transform-origin: left center; animation: grow .9s var(--ease) both; animation-delay: var(--at); }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.safe { position: absolute; left: 96px; right: 96px; top: 96px; bottom: 96px; }
+.rule { width: 120px; height: 6px; background: var(--green-bright); }
+.kicker { font: 600 28px/1.1 var(--display); letter-spacing: 6px; text-transform: uppercase; color: var(--parchment); }
+.title { font: 700 132px/.95 var(--display); text-transform: uppercase; letter-spacing: 1px; }
+.dateline { font: 500 30px/1.2 var(--sans); color: var(--parchment); }
+
+/* Title card */
+.tc .rule { position: absolute; left: 96px; top: 330px; }
+.tc .kicker { position: absolute; left: 96px; top: 372px; }
+.tc .title { position: absolute; left: 96px; top: 430px; width: 1250px; }
+.tc .dateline { position: absolute; left: 96px; bottom: 96px; }
+.tc .mark { position: absolute; right: 120px; bottom: 96px; width: 120px; }
+
+/* Numbers */
+.nums { display: flex; gap: 120px; position: absolute; left: 96px; top: 330px; }
+.num b { display: block; font: 800 220px/.9 var(--display); color: var(--caption-ink); }
+.num span { display: block; margin-top: 14px; font: 600 34px/1.2 var(--sans); color: var(--parchment); }
+.num:last-child b { color: var(--green-bright); }
+.nums-k { position: absolute; left: 96px; top: 250px; }
+
+/* Topic */
+.tp .kicker { position: absolute; left: 96px; top: 140px; }
+.tp .count { position: absolute; left: 96px; top: 182px; font: 600 30px/1.2 var(--sans); color: var(--green-bright); }
+.tp .title { position: absolute; left: 96px; top: 236px; width: 1500px; font-size: 168px; }
+.heads { position: absolute; left: 96px; bottom: 120px; display: grid; gap: 18px; width: 1400px; }
+.head { display: flex; flex-direction: column; gap: 6px; padding: 18px 28px 18px 24px; background: var(--caption-plate); border-left: 6px solid var(--green-bright); border-radius: 0 14px 14px 0; max-width: 1400px; }
+.head b { font: 700 34px/1.2 var(--sans); }
+.head span { font: 500 30px/1.3 var(--sans); color: var(--parchment); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tp .bar { position: absolute; left: 0; bottom: 0; height: 6px; width: 100%; background: var(--green-bright); transform-origin: left; animation: prog var(--dur) linear both; animation-delay: var(--at); }
+@keyframes prog { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Curator */
+.cu .kicker { position: absolute; left: 96px; top: 150px; }
+.cu .title { position: absolute; left: 96px; top: 196px; font-size: 104px; width: 1500px; }
+.rows { position: absolute; left: 96px; top: 430px; width: 1250px; display: grid; gap: 22px; }
+.row { display: grid; grid-template-columns: 420px 1fr 80px; align-items: center; gap: 28px; }
+.row b { font: 700 38px/1.1 var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row i { display: block; height: 40px; background: linear-gradient(90deg, var(--green-deep), var(--green-bright)); border-radius: 0 8px 8px 0; }
+.row em { font: 800 52px/1 var(--display); font-style: normal; color: var(--parchment); }
+.cu .note { position: absolute; left: 96px; bottom: 96px; font: 500 28px/1.3 var(--sans); color: var(--parchment); }
+
+/* End screen (zones for YouTube's elements stay empty in the render) */
+.es .logo { position: absolute; left: 96px; top: 134px; width: 540px; }
+.es .cta { position: absolute; left: 96px; top: 400px; width: 860px; font: 700 96px/.95 var(--display); text-transform: uppercase; }
+.es .url { position: absolute; left: 96px; top: 640px; font: 700 52px/1 var(--sans); color: var(--green-bright); }
+.es .perks { position: absolute; left: 96px; top: 730px; font: 500 32px/1.3 var(--sans); color: var(--parchment); }
+.es .free { position: absolute; left: 96px; bottom: 96px; font: 600 26px/1.3 var(--display); letter-spacing: 5px; text-transform: uppercase; color: var(--parchment); }
+body.guides .zone { position: absolute; border: 3px dashed var(--parchment); opacity: .6; }
+.zone { display: none; }
+body.guides .zone { display: block; }
+.zone.vid { right: 96px; top: 173px; width: 691px; height: 384px; border-radius: 12px; }
+.zone.sub { right: 307px; bottom: 173px; width: 269px; height: 269px; border-radius: 50%; }
+
+.progress { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: rgba(77, 183, 72, .35); transform-origin: left; animation: prog var(--total) linear both; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+(async function () {
+	const q = new URLSearchParams(location.search);
+	const data = window.ROUNDUP || await (await fetch(q.get('data'))).json();
+	const stage = document.getElementById('stage');
+	const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+	const LOGO = '../../brand/assets/Logos/';
+
+	// ---- timing ----
+	const scenes = [];
+	let t = 0;
+	const add = (dur, cls, html) => { scenes.push({ at: t, dur, cls, html }); t += dur; };
+
+	add(5, 'tc', (a) => `
+		<div class="rule grow" style="--at:${a + .2}s"></div>
+		<div class="kicker rise" style="--at:${a + .3}s">Deprogramming · weekly roundup</div>
+		<div class="title rise" style="--at:${a + .45}s">This week on<br>the network</div>
+		<div class="dateline rise" style="--at:${a + .9}s">${esc(data.range)} · ${esc(data.linkShown)}</div>
+		<img class="mark rise" style="--at:${a + 1}s" src="${LOGO}dp-mark-white.svg" alt="">`);
+
+	add(6, 'nb', (a) => `
+		<div class="kicker nums-k rise" style="--at:${a + .2}s">By the numbers</div>
+		<div class="nums">
+			<div class="num rise" style="--at:${a + .4}s"><b>${esc(data.stats.uploadsShown)}</b><span>new videos this week</span></div>
+			<div class="num rise" style="--at:${a + 1.1}s"><b>${data.stats.channels}</b><span>channels in the lineup</span></div>
+			<div class="num rise" style="--at:${a + 1.8}s"><b>1</b><span>page to follow them all</span></div>
+		</div>`);
+
+	data.topics.forEach((tp, i) => {
+		const n = tp.samples.length;
+		const dur = 3.2 + n * 1.3;
+		add(dur, 'tp', (a) => `
+			<div class="kicker rise" style="--at:${a + .15}s">What the network talked about · ${i + 1} of ${data.topics.length}</div>
+			<div class="count rise" style="--at:${a + .3}s">${tp.videos} videos from ${tp.channels} channels</div>
+			<div class="title rise fit" style="--at:${a + .35}s">${esc(tp.topic)}</div>
+			<div class="heads">${tp.samples.map((s, k) => `
+				<div class="head rise" style="--at:${a + 1.2 + k * 1.1}s"><b>${esc(s.channel)}</b><span>“${esc(s.title)}”</span></div>`).join('')}
+			</div>
+			<div class="bar" style="--at:${a}s;--dur:${dur}s"></div>`);
+	});
+
+	if (data.curator && data.curator.length) {
+		const max = Math.max(...data.curator.map((c) => c.watched));
+		add(7.5, 'cu', (a) => `
+			<div class="kicker rise" style="--at:${a + .15}s">The curator's week</div>
+			<div class="title rise" style="--at:${a + .3}s">Most watched</div>
+			<div class="rows">${data.curator.map((c, k) => `
+				<div class="row rise" style="--at:${a + .8 + k * .35}s"><b>${esc(c.channel)}</b><i class="grow" style="--at:${a + .9 + k * .35}s;width:${Math.round((c.watched / max) * 100)}%"></i><em>${c.watched}</em></div>`).join('')}
+			</div>
+			<div class="note rise" style="--at:${a + 2.6}s">The network is ranked by what the curator actually watches.</div>`);
+	}
+
+	add(15, 'es', (a) => `
+		<img class="logo rise" style="--at:${a + .2}s" src="${LOGO}dp-wordmark-color-on-dark.svg" alt="Deprogrammer Project">
+		<div class="cta rise" style="--at:${a + .45}s">Every voice worth your time. One page.</div>
+		<div class="url rise" style="--at:${a + .8}s">${esc(data.linkShown)}</div>
+		<div class="perks rise" style="--at:${a + 1.1}s">Follow channels · Save videos for later · Pick your own layout</div>
+		<div class="free rise" style="--at:${a + 1.4}s">Free · No ads · Link in the description</div>
+		<div class="zone vid"></div><div class="zone sub"></div>`);
+
+	const total = t;
+	stage.style.setProperty('--total', total + 's');
+	stage.innerHTML = `<div class="rings"><i></i><i></i><i></i></div>` +
+		scenes.map((s) => `<section class="scene ${s.cls}" style="--at:${s.at}s;--dur:${s.dur}s">${s.html(s.at)}</section>`).join('') +
+		`<div class="progress"></div>`;
+
+	await document.fonts.ready;
+	await Promise.all([...document.images].map((im) => im.decode().catch(() => {})));
+
+	// Shrink a topic title until it fits on at most two lines.
+	for (const el of document.querySelectorAll('.fit')) {
+		let size = parseFloat(getComputedStyle(el).fontSize);
+		while (el.scrollHeight > size * 0.95 * 2 + 4 && size > 72) { size -= 6; el.style.fontSize = size + 'px'; }
+	}
+
+	window.__duration = total;
+	window.__seek = (sec) => { for (const an of document.getAnimations()) { an.pause(); an.currentTime = sec * 1000; } };
+	window.__seek(0);
+	if (q.has('guides')) document.body.classList.add('guides');
+	if (q.has('play')) { const t0 = performance.now(); const tick = () => { window.__seek(((performance.now() - t0) / 1000) % total); requestAnimationFrame(tick); }; tick(); }
+	if (q.has('at')) window.__seek(parseFloat(q.get('at')));
+	window.__ready = true;
+})();
+</script>
+</body>
+</html>

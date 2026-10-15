@@ -1,0 +1,13 @@
+{
+  "name": "deprogrammer-video",
+  "private": true,
+  "type": "module",
+  "description": "Promo video pipeline for @deprogrammerproject: data → branded HTML compositions → frames → ffmpeg MP4 + thumbnail.",
+  "scripts": {
+    "roundup:data": "node roundup/data.mjs",
+    "roundup:render": "node render.mjs roundup"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  }
+}
