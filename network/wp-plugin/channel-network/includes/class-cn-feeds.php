@@ -309,25 +309,42 @@ final class CN_Feeds {
 	}
 
 	/**
-	 * "The Latest": every channel's uploads from the last $hours, newest first, in strict
-	 * time order (no habit weighting). At most $per_channel per channel so one prolific
-	 * channel can't fill the strip.
+	 * "The Latest": uploads from the last $hours in strict newest-first order (no habit
+	 * weighting), at most $per_channel per channel so one prolific channel can't fill it.
+	 *
+	 * The page filters this list in the browser (category chips, "My network"), so a plain
+	 * global top-N would leave quiet categories nearly empty. It returns the union of the
+	 * newest $limit overall, the newest $per_category in each category and each channel's
+	 * newest upload, still sorted newest first; the page shows up to $limit of whatever
+	 * matches the current filter.
 	 */
-	public static function latest( $limit = 40, $hours = 48, $per_channel = 3 ) {
+	public static function latest( $limit = 40, $hours = 48, $per_channel = 3, $per_category = 12 ) {
 		$cache  = self::cache();
 		$cutoff = time() - $hours * HOUR_IN_SECONDS;
 		$shorts = (bool) CN_Settings::get( 'exclude_shorts' );
-		$out    = [];
+		$all    = [];
+		$keep   = [];
 		foreach ( CN_Lineup::channels() as $ch ) {
 			$videos = $cache['channels'][ $ch['channelId'] ]['videos'] ?? [];
 			$videos = array_filter( $videos, static fn( $v ) => $v['published'] >= $cutoff && ! ( $shorts && true === $v['short'] ) );
 			usort( $videos, static fn( $a, $b ) => $b['published'] <=> $a['published'] );
-			foreach ( array_slice( $videos, 0, $per_channel ) as $v ) {
-				$out[] = $v + [ 'channel' => $ch ];
+			foreach ( array_values( array_slice( $videos, 0, $per_channel ) ) as $i => $v ) {
+				$all[] = $v + [ 'channel' => $ch ];
+				if ( 0 === $i ) {
+					$keep[ $v['id'] ] = true; // every channel's newest, for "My network"
+				}
 			}
 		}
-		usort( $out, static fn( $a, $b ) => $b['published'] <=> $a['published'] );
-		return array_slice( $out, 0, $limit );
+		usort( $all, static fn( $a, $b ) => $b['published'] <=> $a['published'] );
+		$per_cat = [];
+		foreach ( $all as $n => $v ) {
+			$cat = $v['channel']['category'];
+			$per_cat[ $cat ] = ( $per_cat[ $cat ] ?? 0 ) + 1;
+			if ( $n < $limit || $per_cat[ $cat ] <= $per_category ) {
+				$keep[ $v['id'] ] = true;
+			}
+		}
+		return array_values( array_filter( $all, static fn( $v ) => isset( $keep[ $v['id'] ] ) ) );
 	}
 
 	const OPTION_META = 'cn_channel_meta';
