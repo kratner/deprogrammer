@@ -18,3 +18,7 @@ npm-debug.log
 /network/dev/fixtures/
 /network/wp-plugin/channel-network/data/
 .DS_Store
+
+# Promo video pipeline: dependencies and renders stay local
+/video/node_modules/
+/video/out/
