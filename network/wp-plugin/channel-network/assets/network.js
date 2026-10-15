@@ -257,6 +257,12 @@
 		});
 	});
 
+	/* ---- Support links (Ko-fi) ---- */
+	document.addEventListener('click', function (e) {
+		var a = e.target.closest && e.target.closest('a[data-support]');
+		if (a) track('support_click', { location: a.getAttribute('data-support') });
+	});
+
 	/* ---- Suggestion form ---- */
 	var form = document.querySelector('.cn-form');
 	if (form && window.fetch && window.CN) {

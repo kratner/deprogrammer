@@ -35,7 +35,7 @@ foreach ( CN_Lineup::channels() as $ch ) {
 	$out[] = [ 'name' => $ch['name'], 'channelId' => $ch['channelId'], 'category' => $ch['category'], 'network' => $ch['network'] ?? '',
 		'videos' => array_values( array_map( fn( $x ) => [ 'id' => $x['id'], 'title' => $x['title'], 'published' => $x['published'], 'short' => $x['short'] ?? null ], $v ) ) ];
 }
-echo json_encode( [ 'channels' => $out, 'categories' => CN_Lineup::category_labels(), 'refreshed' => (int) $cache['refreshed_at'] ] );`;
+echo json_encode( [ 'channels' => $out, 'categories' => CN_Lineup::category_labels(), 'support' => CN_Page::support_url(), 'refreshed' => (int) $cache['refreshed_at'] ] );`;
 const { server } = JSON.parse(readFileSync(join(PRIVATE, 'config.json'), 'utf8'));
 const key = server.key.replace(/^~(?=\/)/, homedir());
 const raw = execFileSync('ssh', ['-i', key, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=20', '-p', String(server.port), `${server.user}@${server.host}`,
@@ -130,6 +130,7 @@ const data = {
 	curator,
 	link: `https://deprogrammer.org/network/?utm_source=youtube&utm_medium=video&utm_campaign=${slug}`,
 	linkShown: 'deprogrammer.org/network',
+	support: live.support || '',
 };
 const outDir = join(HERE, '..', 'out', slug);
 mkdirSync(outDir, { recursive: true });

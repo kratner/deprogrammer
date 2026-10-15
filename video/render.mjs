@@ -67,6 +67,7 @@ const desc = [
 	'',
 	'Deprogramming gathers the independent voices, legal analysts and newsrooms worth your time. Sign in (free) to follow channels and save videos for later.',
 	'',
+	...(data.support ? ['Keep it free and ad-free: ' + data.support, ''] : []),
 	'Video titles quoted are from the channels named on screen; all graphics are our own.',
 ].join('\n');
 const tags = ['news roundup', 'politics', 'independent media', ...top, 'Deprogramming', 'Deprogrammer Project'].join(', ');

@@ -29,6 +29,11 @@ final class CN_Page {
 		);
 	}
 
+	/** The support page (Ko-fi), or '' when none is set. */
+	public static function support_url() {
+		return (string) CN_Settings::get( 'support_url' );
+	}
+
 	public static function is_network_page() {
 		return is_page() && (bool) get_post_meta( get_queried_object_id(), self::META, true );
 	}

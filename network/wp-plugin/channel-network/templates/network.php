@@ -62,6 +62,9 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 			<h1 class="cn-title"><?php echo esc_html( get_the_title( $cn_page ) ); ?></h1>
 		</div>
 		<div class="cn-top-actions">
+			<?php if ( CN_Page::support_url() ) : ?>
+				<a class="cn-support-link" href="<?php echo esc_url( CN_Page::support_url() ); ?>" target="_blank" rel="noopener" data-support="topbar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><?php esc_html_e( 'Support', 'channel-network' ); ?></a>
+			<?php endif; ?>
 			<a class="cn-suggest-link" href="#cn-suggest"><?php esc_html_e( 'Suggest a channel', 'channel-network' ); ?></a>
 			<?php if ( CN_Members::enabled() ) : ?>
 				<div class="cn-signin-wrap">
@@ -97,6 +100,9 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 						<p class="cn-account-name"></p>
 						<button type="button" role="menuitem" data-act="mine"><?php esc_html_e( 'My network', 'channel-network' ); ?></button>
 						<button type="button" role="menuitem" data-act="saved"><?php esc_html_e( 'Saved videos', 'channel-network' ); ?></button>
+						<?php if ( CN_Page::support_url() ) : ?>
+							<a role="menuitem" href="<?php echo esc_url( CN_Page::support_url() ); ?>" target="_blank" rel="noopener" data-support="account_menu"><?php esc_html_e( 'Support the project', 'channel-network' ); ?></a>
+						<?php endif; ?>
 						<button type="button" role="menuitem" data-act="logout"><?php esc_html_e( 'Sign out', 'channel-network' ); ?></button>
 						<button type="button" role="menuitem" data-act="delete" class="cn-danger"><?php esc_html_e( 'Delete my account', 'channel-network' ); ?></button>
 					</div>
@@ -421,12 +427,24 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 	</section>
 </main>
 
+<?php if ( CN_Page::support_url() ) : ?>
+<aside class="cn-wrap" aria-label="<?php esc_attr_e( 'Support the project', 'channel-network' ); ?>">
+	<div class="cn-support-band">
+	<p><?php esc_html_e( 'Deprogramming is free and ad-free. If it saves you time, you can chip in to keep it going.', 'channel-network' ); ?></p>
+	<a class="cn-btn cn-btn-primary" href="<?php echo esc_url( CN_Page::support_url() ); ?>" target="_blank" rel="noopener" data-support="band"><?php esc_html_e( 'Support on Ko-fi', 'channel-network' ); ?></a>
+	</div>
+</aside>
+<?php endif; ?>
+
 <footer class="cn-footer">
 	<div class="cn-wrap">
 		<p>
 			<a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a>
 			<?php if ( CN_Page::privacy_url() ) : ?>
 				· <a href="<?php echo esc_url( CN_Page::privacy_url() ); ?>"><?php esc_html_e( 'Privacy', 'channel-network' ); ?></a>
+			<?php endif; ?>
+			<?php if ( CN_Page::support_url() ) : ?>
+				· <a href="<?php echo esc_url( CN_Page::support_url() ); ?>" target="_blank" rel="noopener" data-support="footer"><?php esc_html_e( 'Support', 'channel-network' ); ?></a>
 			<?php endif; ?>
 		</p>
 		<p class="cn-fine"><?php esc_html_e( 'Videos, titles and thumbnails belong to their creators and play from YouTube. Inclusion in the network is not an endorsement of every video.', 'channel-network' ); ?></p>
