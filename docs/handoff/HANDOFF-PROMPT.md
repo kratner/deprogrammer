@@ -27,13 +27,13 @@ Ground rules (details in the state doc §7):
   visitors will notice.
 
 Where we left off: deprogrammer.org/network is live on plugin 1.5.0 (member sign-in, follow/save,
-"The Latest", "Edit this page", Ko-fi support links built but hidden until I send the Ko-fi URL).
+"The Latest", "Edit this page", Ko-fi support links live → ko-fi.com/deprogrammer).
 The traffic funnel has started: the weekly roundup video pipeline is in video/, the first episode
 is uploaded and scheduled for Oct 16, and the YouTube channel's legacy content is archived (private).
 Nothing is mid-flight.
 
 Next, unless I say otherwise: [pick one — e.g. "make this week's roundup", "check how the first
-roundup did", "build the Shorts cut", "here's my Ko-fi URL", "review my viewing history",
+roundup did", "build the Shorts cut", "review my viewing history",
 or describe a new task].
 ```
 

@@ -13,7 +13,7 @@ This file is public. Server details, account addresses, the channel lineup with 
 | **Deprogramming network** — https://deprogrammer.org/network | **Live.** WordPress plugin `channel-network` **1.5.0** on the curator's WordPress multisite (deprogrammer.org is one site of it). In the main menu as "Deprogramming". |
 | **Member sign-in** | **Live since 2026-10-14.** Google (Google Identity Services) + emailed single-use link. Members can follow channels, save videos, and save their page layout. |
 | **The Latest + "Edit this page"** | **Live since 2026-10-14** (1.4.0); per-category coverage fix 1.4.1 (2026-10-15). |
-| **Support links (Ko-fi)** | **Built, hidden** (1.5.0): appear once the `support_url` setting is filled. Waiting on the curator's Ko-fi page. |
+| **Support links (Ko-fi)** | **Live** (1.5.0) → https://ko-fi.com/deprogrammer ("Tip", PayPal + Stripe, location confirmed). |
 | **Brand kit** — `brand/` | Done. Mirrors the Design System artifact (tokens, components, logos). |
 | **Promo video pipeline** — `video/` | **Weekly roundup working** (2026-10-15). First episode uploaded by the curator, **scheduled to go public 2026-10-16**. |
 | **YouTube channel** @deprogrammerproject | Cleaned up 2026-10-15: all legacy videos (15) and playlists (32) set to **Private** (archived, not deleted). Public: the roundup + the "Deprogramming Weekly Roundup" playlist. |
@@ -82,7 +82,6 @@ Sections 3–8 can be reordered/hidden per visitor via **Edit this page** (also:
 - [ ] **Newsletter opt-in** — not yet seen working live; check the next time a member ticks the box (Jetpack confirmation email should arrive).
 - [ ] **Members kept out of wp-admin** — works locally; can't be checked with scripts live because the host shows a "Checking your browser" bot wall on /wp-admin. Check once in a real browser with a member account.
 - [ ] **Weights / lineup review** — on request ("review my history"); last 2026-10-13. Procedure in the private notes. Candidates seen 2026-10-15 (3+ watches, not in the lineup): The Lincoln Project, CBS News, Dr. Jason Johnson, Couch Politics, U.S. Democratic Socialists, UNFTR Media.
-- [ ] **Ko-fi:** the curator creates the page (personal account) → set `support_url` (wp-admin Deprogramming settings → Support link) → check the links live.
 - [ ] **12 undecided news channels** waiting for a yes/no (listed in the private notes).
 - [ ] Optional: a variety rule for Top picks; the field guide section is **on hold** (setting off).
 - [ ] Later: tighten DMARC from `p=none` to `quarantine` with a report address.
