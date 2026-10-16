@@ -88,7 +88,8 @@ Sections 3–8 can be reordered/hidden per visitor via **Edit this page** (also:
 - [ ] More sign-in providers were **declined for now** (Google + email only).
 
 **Payments**
-- [ ] **Stripe business-URL review** (opened 2026-10-16 when the website changed to deprogrammer.org/network): check Stripe → Settings → Account status; payments/payouts pause **2026-10-30** if unresolved. Fallback: website → https://ko-fi.com/deprogrammer.
+- [x] Stripe business-URL review (2026-10-16): cleared.
+- [ ] **Stripe payouts show "Paused"** since the review (payments still active, no task or explanation; bank still linked). Recheck Stripe → Settings → Account status; if still paused after ~2 days, the curator contacts Stripe support. Tips still come in meanwhile.
 
 **Traffic funnel / promo videos**
 - [ ] **After 2026-10-16:** check the first roundup's views/CTR in Studio and its `utm_campaign=roundup-2026-10-15` sessions in GA4.
