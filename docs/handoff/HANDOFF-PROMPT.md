@@ -26,12 +26,15 @@ Ground rules (details in the state doc §7):
 - Test in the local Docker site first. Ask me before flipping live settings or shipping anything
   visitors will notice.
 
-Where we left off: deprogrammer.org/network is live on plugin 1.4.0 with member sign-in
-(Google + email link), follow/save, "The Latest" strip and "Edit this page" layouts.
+Where we left off: deprogrammer.org/network is live on plugin 1.5.0 (member sign-in, follow/save,
+"The Latest", "Edit this page", Ko-fi support links built but hidden until I send the Ko-fi URL).
+The traffic funnel has started: the weekly roundup video pipeline is in video/, the first episode
+is uploaded and scheduled for Oct 16, and the YouTube channel's legacy content is archived (private).
 Nothing is mid-flight.
 
-Next, unless I say otherwise: [pick one — e.g. "review my viewing history (3-week refresh)",
-"start the promo video pipeline", "decide the 12 undecided channels", or describe a new task].
+Next, unless I say otherwise: [pick one — e.g. "make this week's roundup", "check how the first
+roundup did", "build the Shorts cut", "here's my Ko-fi URL", "review my viewing history",
+or describe a new task].
 ```
 
 ---
