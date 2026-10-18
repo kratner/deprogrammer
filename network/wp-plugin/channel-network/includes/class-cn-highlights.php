@@ -15,6 +15,9 @@
  * - Spam defences on suggestions: sign-in plus the REST nonce (WordPress refuses cookie-auth
  *   writes without it), a honeypot, 5 suggestions per member and 10 per IP per hour, the video
  *   must exist on YouTube, and Akismet when it's active.
+ * - Members may tick "Suggest anonymously" (their choice, off by default). The row then stores no
+ *   user id, IP hash or browser string, and the admin queue shows "Anonymous". The hourly rate
+ *   limit still counts the member, in a hashed transient that expires and isn't tied to the row.
  * - Any YouTube link form is accepted (watch?v=, youtu.be/, /live/, /shorts/, /embed/, with
  *   or without ?si= / ?is= / &t= tracking params) and reduced to the 11-character video id.
  */
@@ -322,8 +325,11 @@ final class CN_Highlights {
 		if ( null === $meta ) {
 			return self::reply( false, 'not_found', __( 'We couldn\'t find that video on YouTube. Is it public?', 'channel-network' ), 400, 'url' );
 		}
-		CN_Suggestions::insert_highlight( $user, self::watch_url( $id ), 'v:' . $id, $meta['title'], $reason, $req );
-		return $thanks;
+		$anonymous = in_array( strtolower( (string) $req['anonymous'] ), [ '1', 'true', 'on', 'yes' ], true );
+		CN_Suggestions::insert_highlight( $user, self::watch_url( $id ), 'v:' . $id, $meta['title'], $reason, $req, $anonymous );
+		return $anonymous
+			? self::reply( true, 'queued', __( 'Thanks! Your suggestion is in the queue, sent anonymously. The curator reviews every one by hand.', 'channel-network' ) )
+			: $thanks;
 	}
 
 	/**

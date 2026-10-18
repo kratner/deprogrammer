@@ -669,3 +669,7 @@ body.admin-bar .cn-top { top: 32px; }
 	.cn-filters-row { padding-bottom: 8px; }
 	.cn-intro-band { padding-top: 12px; }
 }
+
+/* "Suggest anonymously" on the highlight form (1.6.2): the member's choice, off by default */
+.cn-hl-anon { margin: 2px 0 14px; }
+.cn-hl-anon-hint { display: block; color: var(--cn-muted); font-size: 12.5px; }

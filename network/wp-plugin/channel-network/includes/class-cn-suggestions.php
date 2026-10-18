@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class CN_Suggestions {
 
-	const DB_VERSION = '2'; // 2: kind, user_id, title (highlight suggestions)
+	const DB_VERSION = '3'; // 2: kind, user_id, title (highlight suggestions); 3: anonymous
 	const KINDS      = [ 'channel', 'highlight' ];
 	const STATUSES   = [ 'new', 'added', 'rejected', 'duplicate', 'spam' ];
 
@@ -62,6 +62,7 @@ final class CN_Suggestions {
 				status varchar(16) NOT NULL DEFAULT 'new',
 				reviewed_at datetime NULL DEFAULT NULL,
 				note varchar(255) NOT NULL DEFAULT '',
+				anonymous tinyint(1) NOT NULL DEFAULT 0,
 				PRIMARY KEY  (id),
 				KEY status (status),
 				KEY kind (kind),
@@ -290,28 +291,33 @@ final class CN_Suggestions {
 		return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE user_id = %d AND kind = %s AND channel_key = %s AND status = 'new' LIMIT 1", $user_id, $kind, $key ) ); // phpcs:ignore
 	}
 
-	/** Store a member's highlight suggestion (see CN_Highlights::handle_suggest). */
-	public static function insert_highlight( WP_User $user, $url, $key, $title, $reason, WP_REST_Request $req ) {
+	/**
+	 * Store a member's highlight suggestion (see CN_Highlights::handle_suggest).
+	 * $anonymous is the member's own choice on the form: the row then keeps nothing that
+	 * identifies them (no user id, IP hash or browser string) and Akismet gets no email.
+	 */
+	public static function insert_highlight( WP_User $user, $url, $key, $title, $reason, WP_REST_Request $req, $anonymous = false ) {
 		global $wpdb;
 		$ua      = isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 ) : '';
-		$akismet = self::akismet_check( $url . "\n" . $title, $reason, $user->user_email, $ua, $req );
+		$akismet = self::akismet_check( $url . "\n" . $title, $reason, $anonymous ? '' : $user->user_email, $ua, $req );
 		return $wpdb->insert(
 			self::table(),
 			[
 				'kind'          => 'highlight',
-				'user_id'       => (int) $user->ID,
+				'user_id'       => $anonymous ? 0 : (int) $user->ID,
 				'created_at'    => current_time( 'mysql', true ),
 				'channel_input' => substr( $url, 0, 300 ),
 				'channel_key'   => $key,
 				'title'         => mb_substr( (string) $title, 0, 255 ),
 				'reason'        => $reason,
 				'email'         => '', // the account has it; don't copy it here
-				'ip_hash'       => self::ip_hash(),
-				'user_agent'    => $ua,
+				'ip_hash'       => $anonymous ? '' : self::ip_hash(),
+				'user_agent'    => $anonymous ? '' : $ua,
 				'akismet'       => $akismet,
 				'status'        => 'spam' === $akismet ? 'spam' : 'new',
+				'anonymous'     => $anonymous ? 1 : 0,
 			],
-			[ '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+			[ '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' ]
 		);
 	}
 

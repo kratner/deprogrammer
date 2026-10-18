@@ -230,7 +230,7 @@ final class CN_Admin {
 				CN_Highlights::is_highlighted( $vid ) ? ' <span class="description">(already highlighted)</span>' : '',
 				(int) $r->times,
 				esc_html( $r->reason ),
-				$user ? esc_html( $user->display_name . ' <' . $user->user_email . '>' ) : '<span class="description">deleted account</span>',
+				! empty( $r->anonymous ) ? '<span class="description">Anonymous (member\'s choice)</span>' : ( $user ? esc_html( $user->display_name . ' <' . $user->user_email . '>' ) : '<span class="description">deleted account</span>' ),
 				esc_html( 'added' === $r->status ? 'approved' : $r->status ),
 				'spam' === $r->akismet ? ' <span class="description">(Akismet: spam)</span>' : ''
 			);

@@ -230,6 +230,7 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 					<label for="cn-hl-reason"><?php esc_html_e( 'Why it stands out', 'channel-network' ); ?> <span class="cn-opt"><?php esc_html_e( '(optional)', 'channel-network' ); ?></span></label>
 					<textarea id="cn-hl-reason" name="reason" rows="2" maxlength="500"></textarea>
 				</div>
+				<label class="cn-auth-check cn-hl-anon"><input type="checkbox" name="anonymous" id="cn-hl-anonymous" value="1"> <span><?php esc_html_e( 'Suggest anonymously', 'channel-network' ); ?><span class="cn-hl-anon-hint"><?php esc_html_e( 'The curator won\'t see who sent it, and you won\'t be credited if it\'s highlighted.', 'channel-network' ); ?></span></span></label>
 				<div class="cn-hp" aria-hidden="true"><label for="cn-hl-website">Website</label><input id="cn-hl-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
 				<p class="cn-form-actions">
 					<button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send suggestion', 'channel-network' ); ?></button>
