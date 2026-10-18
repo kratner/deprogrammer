@@ -622,3 +622,50 @@ body.admin-bar .cn-top { top: 32px; }
 	.cn-highlights .cn-card.cn-hl-feature .cn-thumb { width: 100%; max-width: none; }
 	.cn-hl-suggest-btn { min-height: 44px; }
 }
+
+/* ---------- Top bar fit on phones (1.6.1) ----------
+   The title was a fixed 21px that couldn't wrap and the buttons beside it couldn't
+   shrink, so "Deprogramming" slid under them below ~400px (portrait) and at 600-770px
+   (landscape phones, which got the full desktop wordmark). */
+.cn-top-actions { flex: none; }
+.cn-signin, .cn-suggest-link, .cn-support-link { white-space: nowrap; }
+.cn-brand { flex: 1 1 auto; }
+.cn-title { min-width: 0; }
+@media (max-width: 599px) {
+	.cn-top-row { min-height: 52px; gap: 10px; }
+	.cn-brand { gap: 8px; }
+	.cn-top-actions { gap: 6px; }
+	.cn-signin { padding: 0 14px; }
+	/* Scales with the width left over by the mark and the buttons. Tuned for Android's Noto Serif
+	   (the stack's fallback there, ~6% wider than Iowan/Georgia); ellipsis only below 360px. */
+	.cn-title { display: block; font-size: clamp(14px, calc(12vw - 30px), 21px); overflow: hidden; text-overflow: ellipsis; }
+	.cn-filters-row { padding-bottom: 8px; }
+	.cn-intro-band { padding-top: 12px; align-items: center; }
+}
+/* Landscape phones and small tablets: the round mark instead of the full wordmark */
+@media (min-width: 600px) and (max-width: 899px) {
+	.cn-logo .cn-logo-light, .cn-logo .cn-logo-dark { display: none !important; }
+	.cn-logo .cn-logo-mark { display: block; }
+	.cn-brand-sep { display: none; }
+	.cn-brand { gap: 10px; }
+	.cn-title::before { display: none; } /* the green mark already sits beside it, as on phones */
+}
+@media (min-width: 600px) and (max-width: 699px) {
+	/* Support collapses to its heart icon here too (as on phones), so three text buttons fit */
+	.cn-support-link { padding: 0 10px; font-size: 0; gap: 0; min-width: 36px; justify-content: center; }
+	.cn-support-link svg { width: 17px; height: 17px; }
+}
+@media (max-width: 359px) {
+	.cn-top-actions { gap: 4px; }
+	.cn-brand { gap: 6px; }
+	.cn-signin { padding: 0 11px; }
+	.cn-logo .cn-logo-mark { height: 28px; }
+	.cn-title { font-size: 14px; }
+}
+/* Short landscape screens: a two-row sticky bar ate ~30% of the height, so it scrolls away there */
+@media (orientation: landscape) and (max-height: 500px) {
+	.cn-top { position: relative; }
+	.cn-top-row { min-height: 50px; }
+	.cn-filters-row { padding-bottom: 8px; }
+	.cn-intro-band { padding-top: 12px; }
+}
