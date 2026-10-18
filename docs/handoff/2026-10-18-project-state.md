@@ -100,7 +100,7 @@ Akismet is still called for spam checking, but without the member's email. A nam
 - [ ] **d11: who can suggest highlights?** Options: "Members only (as built)" (recommended: less spam) or "Everyone".
 
 **Payments**
-- [ ] **Stripe payouts paused**, unresolved since 2026-10-16. Payments are still accepted and tips accrue in the Stripe balance; PayPal tips are unaffected. The plan was to recheck after about 2 days, which is **now (Oct 18)**: Stripe → Settings → Account status, and if payouts are still paused, contact Stripe support. Board project `per-stripe` (owner: the curator).
+- [x] **Stripe payouts:** **resolved.** They had shown "Paused" since 2026-10-16. Rechecked 2026-10-18 at about 19:10 EDT: Account status shows **Payouts: Active**, no active tasks. The only paused capability is Cartes Bancaires (the French card network), which doesn't matter for US tips.
 
 **Checks not done yet**
 - [ ] Look at the top bar on a **real Android phone**, in portrait and landscape.
@@ -159,7 +159,7 @@ Exact commands with the server details are in `network/private/HANDOFF-2026-10-1
 
 ## 6. Recommended next steps (in order)
 
-1. **Stripe payouts:** the curator rechecks Account status today and contacts Stripe support if payouts are still paused.
+1. ~~Stripe payouts~~: resolved 2026-10-18 (payouts active again).
 2. **Answer d10 and d11** on the board. If d10 is "Show their first name", that's a small plugin change: the name is shown for approved non-anonymous suggestions only.
 3. **Two live checks:** the top bar on a real Android phone, and one throwaway-member anonymous suggestion (then clean up).
 4. **Traffic funnel:** read the first roundup's numbers, then make the next weekly roundup (`video/README.md`).

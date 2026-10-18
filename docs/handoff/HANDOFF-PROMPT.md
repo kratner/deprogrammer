@@ -28,8 +28,7 @@ Ground rules (details in the 10-15 state doc §7):
   visitors will notice.
 
 Where we left off: deprogrammer.org/network is live on plugin 1.6.2 (Highlighted section with
-member suggestions, mobile top-bar fix, "Suggest anonymously" on the highlight form). Open: Stripe
-payouts paused (recheck/contact support), decisions d10 (credit suggesters?) and d11 (who can
+member suggestions, mobile top-bar fix, "Suggest anonymously" on the highlight form). Open: decisions d10 (credit suggesters?) and d11 (who can
 suggest?) on the Command Center board, a real-Android-phone check of the top bar, a live anonymous
 suggestion test, and the next weekly roundup. Nothing is mid-flight.
 
