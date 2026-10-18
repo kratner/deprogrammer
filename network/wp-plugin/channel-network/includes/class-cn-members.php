@@ -370,7 +370,7 @@ final class CN_Members {
 		if ( ! is_array( $raw ) ) {
 			return null;
 		}
-		$known = [ 'latest', 'watched', 'uploads', 'saved', 'lineup', 'suggest' ];
+		$known = [ 'highlights', 'latest', 'watched', 'uploads', 'saved', 'lineup', 'suggest' ];
 		$keep  = static fn( $list ) => array_values( array_unique( array_intersect( array_map( 'strval', (array) $list ), $known ) ) );
 		$cat   = (string) ( $raw['cat'] ?? 'all' );
 		if ( ! in_array( $cat, [ 'all', 'mine' ], true ) && ! isset( CN_Lineup::category_labels()[ $cat ] ) ) {
@@ -406,6 +406,7 @@ final class CN_Members {
 		foreach ( [ self::META_FOLLOWS, self::META_SAVED, self::META_GOOGLE, self::META_LAYOUT ] as $k ) {
 			delete_user_meta( $uid, $k );
 		}
+		CN_Suggestions::forget_user( $uid ); // highlight suggestions stay, unlinked from them
 		if ( is_multisite() ) {
 			require_once ABSPATH . 'wp-admin/includes/ms.php';
 			remove_user_from_blog( $uid, get_current_blog_id() );

@@ -4,7 +4,7 @@
 #
 # Rebuilds the local test site from scratch: subdirectory multisite (like production), a
 # "deprogrammer" site with sample Articles posts and a privacy page, the plugin activated
-# on that site only, and the network page published. Feeds come from dev/fixtures
+# on that site only, the network page published, and one highlighted video. Feeds come from dev/fixtures
 # (regenerate with: node dev/make-fixtures.mjs).
 #   bash dev/setup.sh            → http://localhost:8088/deprogrammer/network/
 set -euo pipefail
@@ -57,5 +57,7 @@ wpc channel-network create-page $U
 PID=$(val post list --post_type=page --meta_key=_cn_network_page --meta_value=1 --field=ID $U)
 wpc post update "$PID" --post_status=publish $U
 wpc channel-network refresh $U
+# Seed the Highlighted section (title/channel come from YouTube's oEmbed; needs internet).
+wpc channel-network highlights add "https://www.youtube.com/live/fttOhpURQGg?si=dev-seed" $U
 wpc channel-network status $U
 echo "→ http://localhost:8088/deprogrammer/network/   (wp-admin: http://localhost:8088/deprogrammer/wp-admin/  admin / admin)"

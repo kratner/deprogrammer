@@ -41,8 +41,8 @@
 			video_title: link ? (link.getAttribute('data-title') || '').slice(0, 100) : '',
 			channel_name: ch ? ch.textContent.trim() : '',
 			category: card.getAttribute('data-cat') || '',
-			section: !feed ? '' : feed.getAttribute('data-section') === 'latest' ? 'the_latest' : feed.hasAttribute('data-sortable') ? 'latest' : 'watched',
-			position: visible.indexOf(card) + 1,
+			section: card.closest('.cn-highlights') ? 'highlights' : !feed ? '' : feed.getAttribute('data-section') === 'latest' ? 'the_latest' : feed.hasAttribute('data-sortable') ? 'latest' : 'watched',
+			position: feed ? visible.indexOf(card) + 1 : Array.prototype.indexOf.call(document.querySelectorAll('.cn-highlights .cn-card'), card) + 1,
 			is_lead: card.classList.contains('is-lead')
 		};
 	}
@@ -50,6 +50,10 @@
 	var chips = Array.prototype.slice.call(document.querySelectorAll('.cn-chip'));
 	var groups = Array.prototype.slice.call(document.querySelectorAll('.cn-lineup-group'));
 	var current = 'all';
+
+	/* ---- Highlighted: the feature shows large, so use the 1280px thumbnail when it exists ---- */
+	var hlImg = document.querySelector('.cn-hl-feature img[data-hi]');
+	if (hlImg) upgradeLead(hlImg.closest('.cn-hl-feature'));
 
 	/* ---- Light/dark toggle ----
 	   The page follows the system setting until the visitor picks one; the choice is kept
@@ -575,6 +579,53 @@
 				history.replaceState(null, '', u);
 			}
 		} catch (e) { /* ignore */ }
+
+		/* ---- Suggest a highlight (members only; Keith approves each one in wp-admin) ---- */
+		var hlBtn = document.querySelector('.cn-hl-suggest-btn');
+		var hlForm = document.getElementById('cn-hl-form');
+		if (hlBtn && hlForm) {
+			hlBtn.hidden = false;
+			var hlStatus = hlForm.querySelector('.cn-form-status');
+			var hlUrl = hlForm.querySelector('#cn-hl-url');
+			var hlSubmit = hlForm.querySelector('button[type="submit"]');
+			var hlShow = function (msg, ok) { hlStatus.textContent = msg; hlStatus.className = 'cn-form-status ' + (ok ? 'is-ok' : 'is-error'); };
+			var hlToggle = function (open) {
+				hlForm.hidden = !open; hlBtn.setAttribute('aria-expanded', String(open));
+				if (open) { hlShow('', true); hlUrl.focus(); } else { hlBtn.focus(); }
+			};
+			hlBtn.addEventListener('click', function () {
+				if (!me.loggedIn) {
+					track('login_hint', { reason: 'highlight' });
+					toast('Sign in to suggest a video for the highlights.', {
+						label: 'Sign in',
+						run: function () { window.scrollTo({ top: 0, behavior: 'smooth' }); openAuth('highlight'); }
+					});
+					return;
+				}
+				hlToggle(hlForm.hidden);
+			});
+			hlForm.querySelector('.cn-hl-cancel').addEventListener('click', function () { hlToggle(false); });
+			hlForm.addEventListener('submit', function (e) {
+				e.preventDefault();
+				hlUrl.removeAttribute('aria-invalid');
+				if (!hlUrl.value.trim()) { hlUrl.setAttribute('aria-invalid', 'true'); hlUrl.focus(); hlShow('Please paste a link to a YouTube video.', false); return; }
+				hlSubmit.disabled = true;
+				hlShow('Sending…', true);
+				api('highlight/suggest', {
+					url: hlUrl.value.trim(),
+					reason: hlForm.querySelector('#cn-hl-reason').value,
+					website: hlForm.querySelector('#cn-hl-website').value
+				}).then(function (j) {
+					track('suggest_highlight', { result: j.status || (j.ok ? 'queued' : 'error') });
+					hlShow(j.message || (j.ok ? 'Thanks!' : 'Something went wrong. Please try again.'), !!j.ok);
+					if (j.ok) hlForm.reset();
+					else if (j.field === 'url') { hlUrl.setAttribute('aria-invalid', 'true'); hlUrl.focus(); }
+				}).catch(function () {
+					track('suggest_highlight', { result: 'network_error' });
+					hlShow('Couldn’t reach the server. Please try again.', false);
+				}).then(function () { hlSubmit.disabled = false; });
+			});
+		}
 
 		layoutHooks.remote = function (layout) {
 			if (!me.loggedIn) return;

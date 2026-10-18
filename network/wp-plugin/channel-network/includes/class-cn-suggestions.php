@@ -6,6 +6,9 @@
  * Visitor channel suggestions: the {prefix}cn_suggestions table, the public REST endpoint
  * POST /wp-json/channel-network/v1/suggest, and WordPress privacy export/erase hooks.
  *
+ * The same table holds members' highlight suggestions (kind = 'highlight', with user_id and
+ * the video's title; see CN_Highlights). Channel suggestions are kind = 'channel'.
+ *
  * Spam defences, in order:
  *   - honeypot field ("website") must be empty;
  *   - a signed form token must be at least 3 seconds and at most 2 days old;
@@ -20,7 +23,8 @@ defined( 'ABSPATH' ) || exit;
 
 final class CN_Suggestions {
 
-	const DB_VERSION = '1';
+	const DB_VERSION = '2'; // 2: kind, user_id, title (highlight suggestions)
+	const KINDS      = [ 'channel', 'highlight' ];
 	const STATUSES   = [ 'new', 'added', 'rejected', 'duplicate', 'spam' ];
 
 	public static function table() {
@@ -33,6 +37,7 @@ final class CN_Suggestions {
 		add_action( 'plugins_loaded', [ __CLASS__, 'maybe_upgrade' ] );
 		add_filter( 'wp_privacy_personal_data_exporters', [ __CLASS__, 'register_exporter' ] );
 		add_filter( 'wp_privacy_personal_data_erasers', [ __CLASS__, 'register_eraser' ] );
+		add_action( 'deleted_user', [ __CLASS__, 'forget_user' ] );
 	}
 
 	public static function install() {
@@ -42,9 +47,12 @@ final class CN_Suggestions {
 		dbDelta(
 			'CREATE TABLE ' . self::table() . " (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				kind varchar(16) NOT NULL DEFAULT 'channel',
+				user_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL,
 				channel_input varchar(300) NOT NULL,
 				channel_key varchar(190) NOT NULL DEFAULT '',
+				title varchar(255) NOT NULL DEFAULT '',
 				reason text NOT NULL,
 				email varchar(190) NOT NULL DEFAULT '',
 				category varchar(32) NOT NULL DEFAULT '',
@@ -56,6 +64,8 @@ final class CN_Suggestions {
 				note varchar(255) NOT NULL DEFAULT '',
 				PRIMARY KEY  (id),
 				KEY status (status),
+				KEY kind (kind),
+				KEY user_id (user_id),
 				KEY channel_key (channel_key),
 				KEY created_at (created_at),
 				KEY email (email)
@@ -248,24 +258,74 @@ final class CN_Suggestions {
 	 *
 	 * @return array<int, object>
 	 */
-	public static function query( $status = 'new', $limit = 200 ) {
+	public static function query( $status = 'new', $limit = 200, $kind = 'channel' ) {
 		global $wpdb;
 		$t     = self::table();
-		$where = 'all' === $status ? "status <> 'spam'" : $wpdb->prepare( 'status = %s', $status );
+		$where = ( 'all' === $status ? "status <> 'spam'" : $wpdb->prepare( 'status = %s', $status ) ) . $wpdb->prepare( ' AND kind = %s', $kind );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $t is our table, $where is prepared above.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.*, (SELECT COUNT(*) FROM $t c WHERE c.channel_key = s.channel_key AND c.status <> 'spam') AS times
+				"SELECT s.*, (SELECT COUNT(*) FROM $t c WHERE c.channel_key = s.channel_key AND c.kind = s.kind AND c.status <> 'spam') AS times
 				 FROM $t s WHERE $where ORDER BY s.created_at DESC, s.id DESC LIMIT %d",
 				$limit
 			)
 		);
 	}
 
-	public static function counts() {
+	/** Rows by id (any kind). */
+	public static function get_many( array $ids ) {
+		global $wpdb;
+		$ids = array_filter( array_map( 'absint', $ids ) );
+		if ( ! $ids ) {
+			return [];
+		}
+		$t = self::table();
+		return $wpdb->get_results( "SELECT * FROM $t WHERE id IN (" . implode( ',', $ids ) . ')' ); // phpcs:ignore -- ints only.
+	}
+
+	/** Whether this member already has a suggestion for this key waiting for review. */
+	public static function user_has_pending( $user_id, $kind, $key ) {
+		global $wpdb;
+		$t = self::table();
+		return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE user_id = %d AND kind = %s AND channel_key = %s AND status = 'new' LIMIT 1", $user_id, $kind, $key ) ); // phpcs:ignore
+	}
+
+	/** Store a member's highlight suggestion (see CN_Highlights::handle_suggest). */
+	public static function insert_highlight( WP_User $user, $url, $key, $title, $reason, WP_REST_Request $req ) {
+		global $wpdb;
+		$ua      = isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 ) : '';
+		$akismet = self::akismet_check( $url . "\n" . $title, $reason, $user->user_email, $ua, $req );
+		return $wpdb->insert(
+			self::table(),
+			[
+				'kind'          => 'highlight',
+				'user_id'       => (int) $user->ID,
+				'created_at'    => current_time( 'mysql', true ),
+				'channel_input' => substr( $url, 0, 300 ),
+				'channel_key'   => $key,
+				'title'         => mb_substr( (string) $title, 0, 255 ),
+				'reason'        => $reason,
+				'email'         => '', // the account has it; don't copy it here
+				'ip_hash'       => self::ip_hash(),
+				'user_agent'    => $ua,
+				'akismet'       => $akismet,
+				'status'        => 'spam' === $akismet ? 'spam' : 'new',
+			],
+			[ '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+		);
+	}
+
+	/** A member deleted their account: keep the suggestion, drop the link to them. */
+	public static function forget_user( $user_id ) {
+		global $wpdb;
+		$wpdb->update( self::table(), [ 'user_id' => 0, 'ip_hash' => '', 'user_agent' => '' ], [ 'user_id' => (int) $user_id ] );
+	}
+
+	/** Status counts for one kind ('channel' or 'highlight'). */
+	public static function counts( $kind = 'channel' ) {
 		global $wpdb;
 		$t    = self::table();
-		$rows = $wpdb->get_results( "SELECT status, COUNT(*) n FROM $t GROUP BY status", OBJECT_K ); // phpcs:ignore
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT status, COUNT(*) n FROM $t WHERE kind = %s GROUP BY status", $kind ), OBJECT_K ); // phpcs:ignore
 		$out  = array_fill_keys( self::STATUSES, 0 );
 		foreach ( $rows as $s => $r ) {
 			$out[ $s ] = (int) $r->n;
@@ -326,16 +386,17 @@ final class CN_Suggestions {
 	public static function export_personal_data( $email, $page = 1 ) {
 		global $wpdb;
 		$t     = self::table();
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t WHERE email = %s ORDER BY id", $email ) ); // phpcs:ignore
+		$user  = get_user_by( 'email', $email );
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t WHERE email = %s OR ( user_id > 0 AND user_id = %d ) ORDER BY id", $email, $user ? $user->ID : 0 ) ); // phpcs:ignore
 		$items = [];
 		foreach ( $rows as $r ) {
 			$items[] = [
 				'group_id'    => 'channel-network',
-				'group_label' => __( 'Channel suggestions', 'channel-network' ),
+				'group_label' => __( 'Channel and video suggestions', 'channel-network' ),
 				'item_id'     => 'cn-suggestion-' . $r->id,
 				'data'        => [
 					[ 'name' => __( 'Submitted', 'channel-network' ), 'value' => $r->created_at . ' UTC' ],
-					[ 'name' => __( 'Channel', 'channel-network' ), 'value' => $r->channel_input ],
+					[ 'name' => 'highlight' === $r->kind ? __( 'Video', 'channel-network' ) : __( 'Channel', 'channel-network' ), 'value' => $r->channel_input ],
 					[ 'name' => __( 'Reason', 'channel-network' ), 'value' => $r->reason ],
 					[ 'name' => __( 'Email', 'channel-network' ), 'value' => $r->email ],
 				],
@@ -347,7 +408,8 @@ final class CN_Suggestions {
 	public static function erase_personal_data( $email, $page = 1 ) {
 		global $wpdb;
 		$t = self::table();
-		$n = (int) $wpdb->query( $wpdb->prepare( "UPDATE $t SET email = '', ip_hash = '', user_agent = '' WHERE email = %s", $email ) ); // phpcs:ignore
+		$user = get_user_by( 'email', $email );
+		$n    = (int) $wpdb->query( $wpdb->prepare( "UPDATE $t SET email = '', user_id = 0, ip_hash = '', user_agent = '' WHERE email = %s OR ( user_id > 0 AND user_id = %d )", $email, $user ? $user->ID : 0 ) ); // phpcs:ignore
 		return [ 'items_removed' => $n > 0, 'items_retained' => false, 'messages' => [], 'done' => true ];
 	}
 }

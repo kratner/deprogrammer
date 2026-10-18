@@ -18,8 +18,10 @@ $cn_seen     = array_flip( array_column( $cn_watched['items'], 'id' ) );
 $cn_stream   = array_values( array_filter( CN_Feeds::stream(), static fn( $v ) => ! isset( $cn_seen[ $v['id'] ] ) ) );
 $cn_cache    = CN_Feeds::cache();
 $cn_latest   = CN_Feeds::latest();
+$cn_hl       = array_slice( CN_Highlights::all(), 0, CN_Highlights::SHOW );
 // Sections "Edit this page" can reorder and hide (keys match CN_Members::sanitize_layout()).
 $cn_sections = [
+	'highlights' => __( 'Highlighted', 'channel-network' ),
 	'latest'  => __( 'The Latest', 'channel-network' ),
 	'watched' => __( 'Recently watched', 'channel-network' ),
 	'uploads' => __( 'Latest from the network', 'channel-network' ),
@@ -29,6 +31,9 @@ $cn_sections = [
 ];
 if ( ! CN_Members::enabled() ) {
 	unset( $cn_sections['saved'] );
+}
+if ( ! $cn_hl ) {
+	unset( $cn_sections['highlights'] );
 }
 $cn_updated  = (int) $cn_cache['refreshed_at'];
 $cn_guide    = CN_Settings::get( 'field_guide' ) ? CN_Page::field_guide() : [];
@@ -200,6 +205,69 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 </section>
 
 <main id="cn-main">
+	<?php if ( $cn_hl ) :
+		$cn_f   = CN_Highlights::card( $cn_hl[0], 0 );
+		$cn_fimg = 'https://i.ytimg.com/vi/' . $cn_f['id'];
+		?>
+	<section class="cn-wrap cn-section cn-highlights" id="cn-highlights" data-section="highlights" aria-labelledby="cn-hl-h">
+		<div class="cn-stream-head">
+			<div>
+				<h2 class="cn-h2" id="cn-hl-h"><?php esc_html_e( 'Highlighted', 'channel-network' ); ?></h2>
+				<p class="cn-sub"><?php esc_html_e( 'Hand-picked by the curator', 'channel-network' ); ?></p>
+			</div>
+			<?php if ( CN_Members::enabled() ) : ?>
+				<button type="button" class="cn-btn cn-hl-suggest-btn" aria-expanded="false" aria-controls="cn-hl-form" hidden><?php esc_html_e( 'Suggest a video', 'channel-network' ); ?></button>
+			<?php endif; ?>
+		</div>
+		<?php if ( CN_Members::enabled() ) : ?>
+			<form class="cn-hl-form" id="cn-hl-form" novalidate hidden>
+				<p class="cn-hl-form-intro"><?php esc_html_e( 'Seen something everyone should watch? Suggest it for this section. The curator reviews every suggestion before anything is shown.', 'channel-network' ); ?></p>
+				<div class="cn-field">
+					<label for="cn-hl-url"><?php esc_html_e( 'YouTube video link', 'channel-network' ); ?> <span class="cn-req"><?php esc_html_e( '(required)', 'channel-network' ); ?></span></label>
+					<input id="cn-hl-url" name="url" type="text" inputmode="url" autocomplete="off" required maxlength="300" placeholder="https://www.youtube.com/watch?v=…">
+				</div>
+				<div class="cn-field">
+					<label for="cn-hl-reason"><?php esc_html_e( 'Why it stands out', 'channel-network' ); ?> <span class="cn-opt"><?php esc_html_e( '(optional)', 'channel-network' ); ?></span></label>
+					<textarea id="cn-hl-reason" name="reason" rows="2" maxlength="500"></textarea>
+				</div>
+				<div class="cn-hp" aria-hidden="true"><label for="cn-hl-website">Website</label><input id="cn-hl-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+				<p class="cn-form-actions">
+					<button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send suggestion', 'channel-network' ); ?></button>
+					<button type="button" class="cn-btn cn-hl-cancel"><?php esc_html_e( 'Cancel', 'channel-network' ); ?></button>
+				</p>
+				<p class="cn-form-status" role="status" aria-live="polite"></p>
+			</form>
+		<?php endif; ?>
+		<article class="cn-card cn-hl-feature" data-cat="<?php echo esc_attr( $cn_f['cat'] ); ?>" data-ch="<?php echo esc_attr( $cn_f['channel_id'] ); ?>" data-ts="0">
+			<a class="cn-thumb" href="<?php echo esc_url( CN_Highlights::watch_url( $cn_f['id'] ) ); ?>" data-video="<?php echo esc_attr( $cn_f['id'] ); ?>" data-title="<?php echo esc_attr( $cn_f['title'] ); ?>" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+				<img src="<?php echo esc_url( $cn_fimg . '/hqdefault.jpg' ); ?>" srcset="<?php echo esc_attr( $cn_fimg . '/mqdefault.jpg 320w, ' . $cn_fimg . '/hqdefault.jpg 480w, ' . $cn_fimg . '/sddefault.jpg 640w' ); ?>" sizes="(max-width: 759px) 100vw, 60vw" alt="" width="480" height="270" loading="eager" fetchpriority="high" decoding="async" data-hi>
+				<span class="cn-tag"><?php echo esc_html( $cn_f['cat_label'] ); ?></span>
+				<span class="cn-play" aria-hidden="true"></span>
+			</a>
+			<?php if ( CN_Members::enabled() ) : ?>
+				<button type="button" class="cn-save" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save for later', 'channel-network' ); ?>" data-video="<?php echo esc_attr( $cn_f['id'] ); ?>" data-title="<?php echo esc_attr( $cn_f['title'] ); ?>" data-channel-id="<?php echo esc_attr( $cn_f['channel_id'] ); ?>" data-channel="<?php echo esc_attr( $cn_f['channel_name'] ); ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg></button>
+			<?php endif; ?>
+			<div class="cn-hl-body">
+				<h3 class="cn-card-title"><a href="<?php echo esc_url( CN_Highlights::watch_url( $cn_f['id'] ) ); ?>" data-video="<?php echo esc_attr( $cn_f['id'] ); ?>" data-title="<?php echo esc_attr( $cn_f['title'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $cn_f['title'] ); ?></a></h3>
+				<?php if ( '' !== $cn_f['note'] ) : ?>
+					<p class="cn-hl-note"><?php echo esc_html( $cn_f['note'] ); ?></p>
+				<?php endif; ?>
+				<p class="cn-card-meta">
+					<?php echo CN_Page::avatar_html( $cn_f['avatar_channel'], 28, 'cn-avatar cn-avatar-sm', true ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside. ?>
+					<a class="cn-card-channel" href="<?php echo esc_url( $cn_f['channel_url'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $cn_f['channel_name'] ); ?></a>
+				</p>
+			</div>
+		</article>
+		<?php if ( count( $cn_hl ) > 1 ) : ?>
+			<ol class="cn-grid cn-hl-grid">
+				<?php foreach ( array_slice( $cn_hl, 1 ) as $cn_i => $h ) :
+					$cn_card = CN_Highlights::card( $h, $cn_i + 1 );
+					include CN_DIR . 'templates/card.php';
+				endforeach; ?>
+			</ol>
+		<?php endif; ?>
+	</section>
+	<?php endif; ?>
 	<?php if ( $cn_latest ) : ?>
 	<section class="cn-wrap cn-section cn-feed cn-rail-section" id="cn-the-latest" data-section="latest" data-no-lead data-hide-empty aria-labelledby="cn-the-latest-h">
 		<div class="cn-stream-head">

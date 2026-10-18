@@ -6,7 +6,8 @@
  * One video card, shared by both feeds. Expects $cn_card:
  *   id, title, cat (category key), cat_label, ts (unix, for the Newest sort; 0 if n/a),
  *   avatar_channel (array for CN_Page::avatar_html), channel_name, channel_url,
- *   time_html (already escaped; '' for none), index (position in its feed, for image loading priority).
+ *   time_html (already escaped; '' for none), index (position in its feed, for image loading priority),
+ *   note (optional; the curator's note on a highlight).
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -29,6 +30,9 @@ $cn_load  = $cn_card['index'] < 4 ? 'loading="eager"' . ( 0 === $cn_card['index'
 		<?php echo CN_Page::avatar_html( $cn_card['avatar_channel'], 36, 'cn-avatar', $cn_card['index'] < 8 ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside. ?>
 		<div class="cn-card-text">
 			<h3 class="cn-card-title"><a href="<?php echo esc_url( $cn_watch ); ?>" data-video="<?php echo esc_attr( $cn_card['id'] ); ?>" data-title="<?php echo esc_attr( $cn_card['title'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $cn_card['title'] ); ?></a></h3>
+			<?php if ( ! empty( $cn_card['note'] ) ) : ?>
+				<p class="cn-hl-note"><?php echo esc_html( $cn_card['note'] ); ?></p>
+			<?php endif; ?>
 			<p class="cn-card-meta">
 				<a class="cn-card-channel" href="<?php echo esc_url( $cn_card['channel_url'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $cn_card['channel_name'] ); ?></a>
 				<?php if ( '' !== $cn_card['time_html'] ) : ?>

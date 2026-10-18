@@ -4,8 +4,8 @@
  * PATH: network/wp-plugin/channel-network/channel-network.php
  *
  * Plugin Name:       Channel Network
- * Description:       The "Deprogramming" page: a curated network of YouTube news & politics channels with their latest videos, plus visitor channel suggestions.
- * Version:           1.5.0
+ * Description:       The "Deprogramming" page: a curated network of YouTube news & politics channels with their latest videos, hand-picked highlights, plus visitor channel and member highlight suggestions.
+ * Version:           1.6.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Keith Ratner
@@ -20,7 +20,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CN_VERSION', '1.5.0' );
+define( 'CN_VERSION', '1.6.0' );
 define( 'CN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -28,6 +28,7 @@ require_once CN_DIR . 'includes/class-cn-lineup.php';
 require_once CN_DIR . 'includes/class-cn-settings.php';
 require_once CN_DIR . 'includes/class-cn-feeds.php';
 require_once CN_DIR . 'includes/class-cn-suggestions.php';
+require_once CN_DIR . 'includes/class-cn-highlights.php';
 require_once CN_DIR . 'includes/class-cn-page.php';
 require_once CN_DIR . 'includes/class-cn-members.php';
 require_once CN_DIR . 'includes/class-cn-admin.php';
@@ -72,6 +73,7 @@ final class CN_Plugin {
 		add_action( 'init', [ __CLASS__, 'schedule' ] );
 
 		CN_Suggestions::init();
+		CN_Highlights::init();
 		CN_Members::init();
 		CN_Page::init();
 		if ( is_admin() ) {
