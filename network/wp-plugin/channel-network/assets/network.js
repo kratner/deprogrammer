@@ -614,9 +614,10 @@
 				api('highlight/suggest', {
 					url: hlUrl.value.trim(),
 					reason: hlForm.querySelector('#cn-hl-reason').value,
+					anonymous: hlForm.querySelector('#cn-hl-anonymous').checked ? '1' : '0',
 					website: hlForm.querySelector('#cn-hl-website').value
 				}).then(function (j) {
-					track('suggest_highlight', { result: j.status || (j.ok ? 'queued' : 'error') });
+					track('suggest_highlight', { result: j.status || (j.ok ? 'queued' : 'error'), anonymous: hlForm.querySelector('#cn-hl-anonymous').checked });
 					hlShow(j.message || (j.ok ? 'Thanks!' : 'Something went wrong. Please try again.'), !!j.ok);
 					if (j.ok) hlForm.reset();
 					else if (j.field === 'url') { hlUrl.setAttribute('aria-invalid', 'true'); hlUrl.focus(); }

@@ -166,10 +166,10 @@ class CN_CLI {
 		}
 		if ( 'suggestions' === $action ) {
 			$rows = array_map(
-				static fn( $r ) => [ 'id' => (int) $r->id, 'created' => $r->created_at, 'video' => $r->channel_input, 'title' => $r->title, 'times' => (int) $r->times, 'reason' => $r->reason, 'user_id' => (int) $r->user_id, 'status' => $r->status, 'akismet' => $r->akismet ],
+				static fn( $r ) => [ 'id' => (int) $r->id, 'created' => $r->created_at, 'video' => $r->channel_input, 'title' => $r->title, 'times' => (int) $r->times, 'reason' => $r->reason, 'user_id' => (int) $r->user_id, 'anonymous' => empty( $r->anonymous ) ? 'no' : 'yes', 'status' => $r->status, 'akismet' => $r->akismet ],
 				CN_Suggestions::query( sanitize_key( $assoc['status'] ?? 'new' ), 1000, CN_Highlights::KIND )
 			);
-			WP_CLI\Utils\format_items( $format, $rows, [ 'id', 'created', 'video', 'title', 'times', 'reason', 'user_id', 'status', 'akismet' ] );
+			WP_CLI\Utils\format_items( $format, $rows, [ 'id', 'created', 'video', 'title', 'times', 'reason', 'user_id', 'anonymous', 'status', 'akismet' ] );
 			return;
 		}
 		$id = CN_Highlights::video_id( $video );
