@@ -9,13 +9,14 @@ I'm continuing work on the Deprogrammer Project (my personal project, separate f
 Repo: ~/Projects/deprogrammer (github.com/kratner/deprogrammer, public).
 
 Before doing anything:
-1. Read docs/handoff/2026-10-15-project-state.md — the current state, open items and working rules.
+1. Read docs/handoff/2026-10-18-project-state.md (latest state, open items, deploy/rollback), then
+   docs/handoff/2026-10-15-project-state.md (the full picture and working rules it builds on).
 2. Read network/private/CLAUDE.md — the canonical private notes (server access, deploy steps,
    data formats, decisions). It's gitignored and never goes into the public repo.
 3. Run `git log --oneline -15` and `git status` in the repo, and check the live plugin version
    (deploy notes in the private CLAUDE.md) so you know nothing changed since the snapshot.
 
-Ground rules (details in the state doc §7):
+Ground rules (details in the 10-15 state doc §7):
 - Personal accounts only — never my work Google Workspace domain, work inbox, the gws CLI,
   or the work Google Cloud project. Personal-account browser work goes in an isolated context;
   gcloud uses the `personal` configuration.
@@ -26,11 +27,11 @@ Ground rules (details in the state doc §7):
 - Test in the local Docker site first. Ask me before flipping live settings or shipping anything
   visitors will notice.
 
-Where we left off: deprogrammer.org/network is live on plugin 1.5.0 (member sign-in, follow/save,
-"The Latest", "Edit this page", Ko-fi support links live → ko-fi.com/deprogrammer).
-The traffic funnel has started: the weekly roundup video pipeline is in video/, the first episode
-is uploaded and scheduled for Oct 16, and the YouTube channel's legacy content is archived (private).
-Nothing is mid-flight.
+Where we left off: deprogrammer.org/network is live on plugin 1.6.2 (Highlighted section with
+member suggestions, mobile top-bar fix, "Suggest anonymously" on the highlight form). Open: Stripe
+payouts paused (recheck/contact support), decisions d10 (credit suggesters?) and d11 (who can
+suggest?) on the Command Center board, a real-Android-phone check of the top bar, a live anonymous
+suggestion test, and the next weekly roundup. Nothing is mid-flight.
 
 Next, unless I say otherwise: [pick one — e.g. "make this week's roundup", "check how the first
 roundup did", "build the Shorts cut", "review my viewing history",
