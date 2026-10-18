@@ -6,7 +6,7 @@ The code behind **Deprogramming** (https://deprogrammer.org/network): one page t
 
 | Path | What it is |
 |---|---|
-| `wp-plugin/channel-network/` | WordPress plugin: the page template, YouTube feed fetching (RSS or YouTube Data API, cached, refreshed in the background), visitor suggestions (REST endpoint, spam protection, admin review screen), GA4 events, WP-CLI commands |
+| `wp-plugin/channel-network/` | WordPress plugin: the page template, YouTube feed fetching (RSS or YouTube Data API, cached, refreshed in the background), visitor suggestions (REST endpoint, spam protection, admin review screen), a hand-picked "Highlighted" section that signed-in members can suggest videos for (curator-approved), GA4 events, WP-CLI commands |
 | `scripts/channels.mjs` | Maintains the channel lineup: add/remove/exclude channels, weekly review reports, habit weights, the watched list, a YouTube-Music filter |
 | `scripts/history-scrape.js` | Browser snippet that reads the curator's YouTube watch history (run in a signed-in browser session) |
 | `scripts/build-plugin.mjs` | Copies the public part of the lineup (names, categories, relative 1-100 weights) into the plugin |

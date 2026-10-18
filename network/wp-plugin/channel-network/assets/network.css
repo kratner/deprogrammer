@@ -580,3 +580,45 @@ body.admin-bar .cn-top { top: 32px; }
 .cn-support-band a.cn-btn { display: inline-flex; align-items: center; text-decoration: none; }
 .cn-support-band a.cn-btn-primary, .cn-support-band a.cn-btn-primary:visited { color: var(--cn-bg); }
 .cn-support-band a.cn-btn-primary:hover { color: var(--cn-accent-ink); }
+
+/* ---------- Highlighted (hand-picked videos at the top, plugin 1.6.0) ----------
+   The first highlight is a feature: image left, title and the curator's note right from
+   760px up, stacked on phones. Any others follow in the normal card grid. The section
+   isn't a .cn-feed, so category filters and "compact" never hide or shrink it. */
+.cn-highlights { padding-bottom: clamp(12px, 2vw, 20px); }
+.cn-highlights .cn-stream-head { flex-wrap: wrap; }
+.cn-hl-suggest-btn { min-height: 40px; padding: 0 16px; font-size: 13px; }
+.cn-highlights .cn-card.cn-hl-feature {
+	display: grid; grid-template-columns: 1fr; gap: 14px; align-items: center;
+	padding: clamp(10px, 1.4vw, 14px); background: var(--cn-surface); border-radius: var(--cn-r-lg);
+	box-shadow: var(--cn-shadow-sm), 0 0 0 1px var(--cn-line);
+}
+.cn-highlights .cn-card.cn-hl-feature .cn-thumb { width: 100%; max-width: none; aspect-ratio: 16 / 9; border-radius: var(--cn-r); }
+.cn-highlights .cn-card.cn-hl-feature .cn-tag { display: inline-block; left: 12px; top: 12px; background: var(--cn-accent); color: var(--cn-accent-ink); }
+.cn-highlights .cn-card.cn-hl-feature .cn-play { width: 64px; height: 64px; opacity: 1; transform: none; }
+.cn-highlights .cn-card.cn-hl-feature .cn-play::after { left: 25px; top: 20px; border-width: 12px 0 12px 19px; }
+.cn-highlights .cn-card.cn-hl-feature .cn-save { top: 22px; right: 22px; left: auto; }
+.cn-hl-body { min-width: 0; padding: 2px 6px 6px; }
+.cn-highlights .cn-card.cn-hl-feature .cn-card-title { font-size: clamp(19px, 2.2vw, 28px); line-height: 1.22; font-weight: 750; letter-spacing: -.02em; -webkit-line-clamp: 4; margin-bottom: 10px; }
+.cn-hl-note { margin: 0 0 12px; font-size: 15px; line-height: 1.5; color: var(--cn-ink-2); }
+.cn-card .cn-hl-note { font-size: 13.5px; margin: 2px 0 6px; }
+.cn-hl-feature .cn-card-meta { align-items: center; gap: 8px; font-size: 14px; }
+.cn-avatar-sm { width: 28px; height: 28px; }
+.cn-highlights .cn-hl-feature .cn-avatar { display: inline-grid; }
+@media (min-width: 760px) {
+	.cn-highlights .cn-card.cn-hl-feature { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: clamp(18px, 2.6vw, 34px); }
+	.cn-hl-body { padding: 8px 8px 8px 0; }
+}
+.cn-hl-grid { margin-top: clamp(20px, 2.4vw, 28px); }
+.cn-hl-form {
+	margin: 0 0 20px; padding: clamp(14px, 2vw, 20px); max-width: 640px;
+	background: var(--cn-surface); border-radius: var(--cn-r-lg); box-shadow: var(--cn-shadow-sm), 0 0 0 1px var(--cn-line);
+}
+.cn-hl-form-intro { margin: 0 0 14px; font-size: 14px; color: var(--cn-muted); }
+.cn-hl-form textarea { min-height: 64px; }
+.cn-hl-form .cn-form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 599px) {
+	.cn-highlights .cn-card.cn-hl-feature { flex-direction: column; padding: 8px; }
+	.cn-highlights .cn-card.cn-hl-feature .cn-thumb { width: 100%; max-width: none; }
+	.cn-hl-suggest-btn { min-height: 44px; }
+}
