@@ -6,6 +6,12 @@
  * wp-admin → Network: Highlights (the hand-picked videos at the top of the page, plus the
  * members' highlight suggestions queue), Suggestions (channel review queue), Feeds
  * (per-channel health, refresh now), Settings (source, API key, stream options).
+ *
+ * Both suggestion queues have WordPress-style row actions (1.6.5): hover links under each row
+ * (Approve / Quick approve / Reject / Spam / Delete for videos; Mark added / Reject / Duplicate /
+ * Spam / Delete for channels), so one suggestion is handled in one click. Quick approve opens an
+ * inline row, like Quick Edit, to set the note, title and position before the video goes live.
+ * Bulk actions stay for working through many at once.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -20,6 +26,63 @@ final class CN_Admin {
 		add_action( 'admin_post_cn_suggestion_action', [ __CLASS__, 'handle_suggestion_action' ] );
 		add_action( 'admin_post_cn_refresh', [ __CLASS__, 'handle_refresh' ] );
 		add_action( 'admin_post_cn_highlight_action', [ __CLASS__, 'handle_highlight_action' ] );
+		add_action( 'admin_post_cn_row_action', [ __CLASS__, 'handle_row_action' ] );
+	}
+
+	/** Row-action ops per queue, as label => op. */
+	private static function row_ops( $kind ) {
+		return 'highlight' === $kind
+			? [ 'Approve' => 'approve', 'Reject' => 'rejected', 'Spam' => 'spam', 'Delete' => 'delete' ]
+			: [ 'Mark added' => 'added', 'Reject' => 'rejected', 'Duplicate' => 'duplicate', 'Spam' => 'spam', 'Delete' => 'delete' ];
+	}
+
+	/** The hover links under a suggestion row (only the ones that change its status). */
+	private static function row_actions( $kind, $r, $status ) {
+		$links = [];
+		foreach ( self::row_ops( $kind ) as $label => $op ) {
+			if ( $op === $r->status || ( 'approve' === $op && 'added' === $r->status ) ) {
+				continue;
+			}
+			$url = wp_nonce_url(
+				add_query_arg( [ 'action' => 'cn_row_action', 'kind' => $kind, 'op' => $op, 'id' => (int) $r->id, 'return_status' => $status ], admin_url( 'admin-post.php' ) ),
+				'cn_row_' . $op . '_' . (int) $r->id
+			);
+			$cls     = 'delete' === $op || 'spam' === $op ? 'trash' : ( 'approve' === $op || 'added' === $op ? 'cn-approve' : 'edit' ); // not 'approve': core CSS hides that (comments screen)
+			$confirm = 'delete' === $op ? ' onclick="return confirm(\'Delete this suggestion permanently?\')"' : '';
+			$links[] = sprintf( '<span class="%s"><a href="%s"%s>%s</a></span>', esc_attr( $cls ), esc_url( $url ), $confirm, esc_html( $label ) );
+			if ( 'approve' === $op ) {
+				$links[] = sprintf( '<span class="edit"><button type="button" class="button-link cn-qa-toggle" aria-expanded="false" aria-controls="cn-qa-%1$d">%2$s</button></span>', (int) $r->id, esc_html__( 'Quick approve', 'channel-network' ) );
+			}
+		}
+		return $links ? '<div class="row-actions">' . implode( ' | ', $links ) . '</div>' : '';
+	}
+
+	/** One click on a row action: change that one suggestion and come back to the same list. */
+	public static function handle_row_action() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Not allowed', 403 );
+		}
+		$kind = 'highlight' === ( $_GET['kind'] ?? '' ) ? 'highlight' : 'channel'; // phpcs:ignore WordPress.Security.NonceVerification -- verified below.
+		$op   = sanitize_key( $_GET['op'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification
+		$id   = absint( $_GET['id'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification
+		check_admin_referer( 'cn_row_' . $op . '_' . $id );
+		if ( ! $id || ! in_array( $op, self::row_ops( $kind ), true ) ) {
+			wp_die( 'Unknown action', 400 );
+		}
+		if ( 'approve' === $op ) {
+			$msg = CN_Highlights::approve( [ $id ] ) ? 'Highlighted. It\'s on the page now.' : 'Not added: that video is already highlighted or YouTube didn\'t return it.';
+		} elseif ( 'delete' === $op ) {
+			$msg = CN_Suggestions::delete( [ $id ] ) ? 'Suggestion deleted.' : 'Nothing deleted.';
+		} else {
+			CN_Suggestions::set_status( [ $id ], $op );
+			$msg = [ 'added' => 'Marked added.', 'rejected' => 'Rejected.', 'duplicate' => 'Marked duplicate.', 'spam' => 'Marked spam.' ][ $op ] ?? 'Updated.';
+		}
+		$args = [ 'status' => sanitize_key( $_GET['return_status'] ?? 'new' ), 'cn_msg' => rawurlencode( $msg ) ]; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( 'highlight' === $kind ) {
+			$args['tab'] = 'highlights';
+		}
+		wp_safe_redirect( self::url( $args ) );
+		exit;
 	}
 
 	public static function menu() {
@@ -115,7 +178,7 @@ final class CN_Admin {
 				'<tr><th class="check-column"><input class="cn-cb" type="checkbox" name="ids[]" value="%d"></th><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s%s</td></tr>',
 				(int) $r->id,
 				esc_html( get_date_from_gmt( $r->created_at, 'M j, Y g:i a' ) ),
-				$href ? '<a href="' . esc_url( $href ) . '" target="_blank" rel="noopener">' . esc_html( $r->channel_input ) . '</a>' : esc_html( $r->channel_input ),
+				( $href ? '<a href="' . esc_url( $href ) . '" target="_blank" rel="noopener">' . esc_html( $r->channel_input ) . '</a>' : esc_html( $r->channel_input ) ) . self::row_actions( 'channel', $r, $status ),
 				(int) $r->times,
 				esc_html( $cats[ $r->category ] ?? '' ),
 				esc_html( $r->reason ),
@@ -147,10 +210,14 @@ final class CN_Admin {
 	// -------------------------------------------------------------------- Highlights tab
 
 	private static function render_highlights() {
-		$list = CN_Highlights::all();
-		$post = esc_url( admin_url( 'admin-post.php' ) );
-		echo '<h2>Highlighted on the page</h2>';
-		printf( '<p class="description">The first one is shown large at the top of the page; up to %d are shown. Members can suggest videos below; nothing appears until you approve it.</p>', (int) CN_Highlights::SHOW );
+		$list    = CN_Highlights::all();
+		$post    = esc_url( admin_url( 'admin-post.php' ) );
+		$waiting = CN_Suggestions::counts( CN_Highlights::KIND )['new'];
+		if ( $waiting ) {
+			self::render_hl_queue( $waiting ); // new suggestions first, so they can't be missed
+		}
+		echo '<h2' . ( $waiting ? ' style="margin-top:32px"' : '' ) . '>Highlighted on the page</h2>';
+		printf( '<p class="description">Up to %1$d are shown up front; the first is the large feature. Each stays up front for %2$d days, then moves to the archive by itself (visitors see it under "See all highlights"). <strong>Pin</strong> keeps one up front; <strong>Archive now</strong> moves one early; <strong>Bring back</strong> puts an archived one up front for another %2$d days. Nothing is deleted unless you remove it.</p>', (int) CN_Highlights::SHOW, (int) CN_Highlights::FRESH_DAYS );
 
 		// Add a video.
 		echo '<form method="post" action="' . $post . '" style="margin:12px 0 20px;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;max-width:900px">';
@@ -169,14 +236,27 @@ final class CN_Admin {
 			echo '<form method="post" action="' . $post . '">';
 			wp_nonce_field( 'cn_highlight_action' );
 			echo '<input type="hidden" name="action" value="cn_highlight_action">';
-			echo '<table class="widefat striped" style="max-width:1100px"><thead><tr><th style="width:2em">#</th><th style="width:130px">Video</th><th>Title</th><th>Note</th><th>Added</th><th style="width:170px">Order</th></tr></thead><tbody>';
-			$last = count( $list ) - 1;
+			echo '<table class="widefat striped" style="max-width:1100px"><thead><tr><th style="width:2em">#</th><th style="width:130px">Video</th><th>Title</th><th>Note</th><th>Added</th><th>On the page</th><th style="width:170px">Order</th></tr></thead><tbody>';
+			$last  = count( $list ) - 1;
+			$front = array_column( array_slice( CN_Highlights::current(), 0, CN_Highlights::SHOW ), 'id' );
 			foreach ( $list as $i => $h ) {
-				$c = CN_Highlights::card( $h, $i );
+				$c   = CN_Highlights::card( $h, $i );
+				$pos = array_search( $h['id'], $front, true );
+				$cur = CN_Highlights::is_current( $h );
+				if ( false !== $pos ) {
+					$state = ( 0 === $pos ? '<strong>Feature</strong>' : 'Up front' ) . ( ! empty( $h['pinned'] ) ? ' · pinned' : ( $cur ? ' · until ' . esc_html( wp_date( 'M j', CN_Highlights::expires( $h ) ) ) : ' · <span class="description">shown because nothing else is up front</span>' ) );
+				} elseif ( $cur ) {
+					$state = '<span class="description">Up front, but more than ' . (int) CN_Highlights::SHOW . ' are: waiting for room</span>';
+				} else {
+					$state = '<span class="description">Archived' . ( ! empty( $h['archived'] ) ? ' (by you)' : ' ' . esc_html( wp_date( 'M j', CN_Highlights::expires( $h ) ) ) ) . '</span>';
+				}
+				$state .= '<br>' . ( $cur
+					? ( ! empty( $h['pinned'] ) ? '<button class="button-link" name="op" value="unpin|' . esc_attr( $h['id'] ) . '">Unpin</button>' : '<button class="button-link" name="op" value="pin|' . esc_attr( $h['id'] ) . '">Pin</button>' ) . ' | <button class="button-link" name="op" value="archive|' . esc_attr( $h['id'] ) . '">Archive now</button>'
+					: '<button class="button-link" name="op" value="restore|' . esc_attr( $h['id'] ) . '">Bring back</button> | <button class="button-link" name="op" value="pin|' . esc_attr( $h['id'] ) . '">Pin</button>' );
 				printf(
-					'<tr><td>%1$d%2$s</td><td><a href="%3$s" target="_blank" rel="noopener"><img src="https://i.ytimg.com/vi/%4$s/mqdefault.jpg" width="120" height="68" alt="" style="display:block;border-radius:4px"></a></td><td><a href="%3$s" target="_blank" rel="noopener"><strong>%5$s</strong></a><br><span class="description">%6$s%7$s</span></td><td><input type="text" class="regular-text" name="notes[%4$s]" value="%8$s" maxlength="280"></td><td>%9$s</td><td>%10$s %11$s <button class="button-link-delete" name="op" value="remove|%4$s" onclick="return confirm(\'Remove this highlight?\')">Remove</button></td></tr>',
+					'<tr><td>%1$d%2$s</td><td><a href="%3$s" target="_blank" rel="noopener"><img src="https://i.ytimg.com/vi/%4$s/mqdefault.jpg" width="120" height="68" alt="" style="display:block;border-radius:4px"></a></td><td><a href="%3$s" target="_blank" rel="noopener"><strong>%5$s</strong></a><br><span class="description">%6$s%7$s</span></td><td><input type="text" class="regular-text" name="notes[%4$s]" value="%8$s" maxlength="280"></td><td>%9$s</td><td>%12$s</td><td>%10$s %11$s <button class="button-link-delete" name="op" value="remove|%4$s" onclick="return confirm(\'Remove this highlight?\')">Remove</button></td></tr>',
 					(int) $i + 1,
-					0 === $i ? '<br><span class="description">feature</span>' : ( $i >= CN_Highlights::SHOW ? '<br><span class="description">not shown</span>' : '' ),
+					'',
 					esc_url( CN_Highlights::watch_url( $h['id'] ) ),
 					esc_attr( $h['id'] ),
 					esc_html( $h['title'] ),
@@ -185,18 +265,27 @@ final class CN_Admin {
 					esc_attr( $h['note'] ?? '' ),
 					esc_html( wp_date( 'M j, Y', (int) ( $h['added'] ?? 0 ) ) ),
 					$i > 0 ? '<button class="button button-small" name="op" value="up|' . esc_attr( $h['id'] ) . '" aria-label="Move up">↑</button>' : '',
-					$i < $last ? '<button class="button button-small" name="op" value="down|' . esc_attr( $h['id'] ) . '" aria-label="Move down">↓</button>' : ''
+					$i < $last ? '<button class="button button-small" name="op" value="down|' . esc_attr( $h['id'] ) . '" aria-label="Move down">↓</button>' : '',
+					$state // escaped above
 				);
 			}
 			echo '</tbody></table><p><button class="button" name="op" value="notes">Save notes</button></p></form>';
 		}
+		if ( ! $waiting ) {
+			self::render_hl_queue( 0 );
+		}
+	}
 
-		// Members' suggestions.
+	/** Members' highlight suggestions (shown above the add form while any are new). */
+	private static function render_hl_queue( $waiting ) {
+		$post   = esc_url( admin_url( 'admin-post.php' ) );
 		$status = isset( $_GET['status'] ) ? sanitize_key( $_GET['status'] ) : 'new'; // phpcs:ignore WordPress.Security.NonceVerification
 		$status = in_array( $status, array_merge( CN_Suggestions::STATUSES, [ 'all' ] ), true ) ? $status : 'new';
 		$counts = CN_Suggestions::counts( CN_Highlights::KIND );
 		$rows   = CN_Suggestions::query( $status, 200, CN_Highlights::KIND );
-		echo '<h2 style="margin-top:32px">Suggested by members</h2>';
+		echo $waiting
+			? '<h2>' . esc_html( sprintf( _n( '%d suggested video is waiting for you', '%d suggested videos are waiting for you', $waiting, 'channel-network' ), $waiting ) ) . '</h2><p class="description">Hover a row (or tab to it) for Approve, Quick approve, Reject, Spam and Delete. Quick approve lets you add a note, adjust the title and choose where it goes before it\'s published.</p>'
+			: '<h2 style="margin-top:32px">Suggested by members</h2>';
 		if ( ! CN_Members::enabled() ) {
 			echo '<p class="description">Member sign-in is off (Settings), so members can\'t suggest highlights right now.</p>';
 		}
@@ -216,7 +305,8 @@ final class CN_Admin {
 		wp_nonce_field( 'cn_highlight_action' );
 		echo '<input type="hidden" name="action" value="cn_highlight_action"><input type="hidden" name="op" value="bulk"><input type="hidden" name="return_status" value="' . esc_attr( $status ) . '">';
 		echo '<div class="tablenav top"><select name="do"><option value="">Bulk action</option><option value="approve">Approve (highlight it)</option><option value="rejected">Reject</option><option value="duplicate">Mark duplicate</option><option value="spam">Mark spam</option><option value="new">Back to new</option><option value="delete">Delete permanently</option></select> <input type="submit" class="button" value="Apply"></div>';
-		echo '<table class="widefat striped"><thead><tr><td class="check-column"><input type="checkbox" onclick="document.querySelectorAll(\'.cn-hcb\').forEach(c=>c.checked=this.checked)"></td><th>Submitted</th><th style="width:130px">Video</th><th>Title</th><th>Times suggested</th><th>Why</th><th>Member</th><th>Status</th></tr></thead><tbody>';
+		self::quick_approve_assets();
+		echo '<table class="widefat striped"><thead><tr><td class="check-column"><input type="checkbox" onclick="document.querySelectorAll(\'.cn-hcb\').forEach(c=>c.checked=this.checked)"></td><th>Submitted</th><th style="width:130px">Video</th><th style="width:34%">Title</th><th>Times suggested</th><th>Why</th><th>Member</th><th>Status</th></tr></thead><tbody>';
 		foreach ( $rows as $r ) {
 			$vid  = CN_Highlights::video_id( $r->channel_input );
 			$user = $r->user_id ? get_userdata( (int) $r->user_id ) : null;
@@ -226,8 +316,11 @@ final class CN_Admin {
 				esc_html( get_date_from_gmt( $r->created_at, 'M j, Y g:i a' ) ),
 				esc_url( $r->channel_input ),
 				esc_attr( $vid ),
-				esc_html( $r->title ),
-				CN_Highlights::is_highlighted( $vid ) ? ' <span class="description">(already highlighted)</span>' : '',
+				'<strong>' . esc_html( $r->title ) . '</strong>',
+				( CN_Highlights::is_highlighted( $vid ) ? ' <span class="description">(already highlighted)</span>' : '' )
+					. '<br><a class="cn-q-url" href="' . esc_url( $r->channel_input ) . '" target="_blank" rel="noopener">' . esc_html( $r->channel_input ) . '</a>'
+					. self::row_actions( 'highlight', $r, $status )
+					. ( 'added' !== $r->status ? self::quick_approve_panel( $r ) : '' ),
 				(int) $r->times,
 				esc_html( $r->reason ),
 				! empty( $r->anonymous ) ? '<span class="description">Anonymous (member\'s choice)</span>' : ( $user ? esc_html( $user->display_name . ' <' . $user->user_email . '>' ) : '<span class="description">deleted account</span>' ),
@@ -236,6 +329,24 @@ final class CN_Admin {
 			);
 		}
 		echo '</tbody></table></form>';
+	}
+
+	/** Quick approve: an inline panel (like Quick Edit) inside the row's title cell. */
+	private static function quick_approve_panel( $r ) {
+		$id = (int) $r->id;
+		return sprintf(
+			'<div class="cn-qa" id="cn-qa-%1$d" hidden><p><label>Note shown with it <span class="description">(optional)</span><br><input type="text" name="qa[%1$d][note]" class="large-text" maxlength="280"></label></p>'
+			. '<p><label>Title<br><input type="text" name="qa[%1$d][title]" class="large-text" maxlength="200" value="%2$s"></label></p>'
+			. '<p><label><input type="radio" name="qa[%1$d][position]" value="top" checked> Put it first</label> &nbsp; <label><input type="radio" name="qa[%1$d][position]" value="bottom"> Put it last</label></p>'
+			. '<p><button class="button button-primary" name="op" value="quick|%1$d">Approve and highlight</button> <button type="button" class="button cn-qa-cancel">Cancel</button></p></div>',
+			$id,
+			esc_attr( $r->title )
+		);
+	}
+
+	private static function quick_approve_assets() {
+		echo '<style>.cn-qa{margin:8px 0 4px;padding:10px 12px;background:#f6f7f7;border:1px solid #c3c4c7}.cn-qa p{margin:6px 0}.cn-q-url{font-size:12px;word-break:break-all;color:#50575e}.row-actions .cn-approve a{color:#007017;font-weight:600}</style>';
+		echo '<script>document.addEventListener("click",function(e){var t=e.target.closest(".cn-qa-toggle,.cn-qa-cancel");if(!t)return;var p=t.classList.contains("cn-qa-cancel")?t.closest(".cn-qa"):document.getElementById(t.getAttribute("aria-controls"));if(!p)return;p.hidden=!p.hidden;var b=document.querySelector("[aria-controls=\'"+p.id+"\']");if(b)b.setAttribute("aria-expanded",String(!p.hidden));if(!p.hidden){var i=p.querySelector("input");if(i)i.focus();}});</script>';
 	}
 
 	public static function handle_highlight_action() {
@@ -262,6 +373,22 @@ final class CN_Admin {
 			$msg = 'Order updated.';
 		} elseif ( 'remove' === $verb ) {
 			$msg = CN_Highlights::remove( $id ) ? 'Highlight removed.' : 'Nothing removed.';
+		} elseif ( 'quick' === $verb ) {
+			$sid = absint( $id );
+			$qa  = (array) ( $_POST['qa'][ $sid ] ?? [] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- each field sanitized in CN_Highlights::add().
+			$n   = $sid ? CN_Highlights::approve(
+				[ $sid ],
+				[
+					'note'     => (string) wp_unslash( $qa['note'] ?? '' ),
+					'title'    => (string) wp_unslash( $qa['title'] ?? '' ),
+					'position' => 'bottom' === ( $qa['position'] ?? '' ) ? 'bottom' : 'top',
+				]
+			) : 0;
+			$msg            = $n ? 'Highlighted. It\'s on the page now.' : 'Not added: that video is already highlighted or YouTube didn\'t return it.';
+			$args['status'] = sanitize_key( $_POST['return_status'] ?? 'new' );
+		} elseif ( in_array( $verb, [ 'pin', 'unpin', 'archive', 'restore' ], true ) ) {
+			CN_Highlights::set_state( $id, $verb );
+			$msg = [ 'pin' => 'Pinned: it stays up front until you unpin it.', 'unpin' => 'Unpinned: it moves to the archive when its time is up.', 'archive' => 'Moved to the archive.', 'restore' => 'Brought back up front.' ][ $verb ];
 		} elseif ( 'notes' === $verb ) {
 			CN_Highlights::set_notes( array_map( static fn( $v ) => (string) wp_unslash( $v ), (array) ( $_POST['notes'] ?? [] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized inside.
 			$msg = 'Notes saved.';

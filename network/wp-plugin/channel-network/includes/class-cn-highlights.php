@@ -18,6 +18,11 @@
  * - Members may tick "Suggest anonymously" (their choice, off by default). The row then stores no
  *   user id, IP hash or browser string, and the admin queue shows "Anonymous". The hourly rate
  *   limit still counts the member, in a hashed transient that expires and isn't tied to the row.
+ * - As they accumulate (1.6.5): a highlight is "up front" for FRESH_DAYS after it was added (or
+ *   brought back), then moves to the archive by itself. A pinned one stays up front until
+ *   unpinned; "Archive now" moves one early. Nothing is deleted by aging: the page shows up to
+ *   SHOW up-front highlights, and "See all highlights" expands every other one in place, newest
+ *   first. If none are up front, the top one of the list still shows, so the section never empties.
  * - Any YouTube link form is accepted (watch?v=, youtu.be/, /live/, /shorts/, /embed/, with
  *   or without ?si= / ?is= / &t= tracking params) and reduced to the 11-character video id.
  */
@@ -27,8 +32,9 @@ defined( 'ABSPATH' ) || exit;
 final class CN_Highlights {
 
 	const OPTION   = 'cn_highlights';
-	const MAX      = 30; // most highlights kept
-	const SHOW     = 9;  // most shown on the page (the first is the feature)
+	const MAX        = 500; // most kept; past this, the oldest archived (never pinned) go first
+	const SHOW       = 9;   // most shown up front (the first is the feature)
+	const FRESH_DAYS = 14;  // days a highlight stays up front unless pinned
 	const KIND     = 'highlight';
 
 	public static function init() {
@@ -48,7 +54,74 @@ final class CN_Highlights {
 	}
 
 	private static function save( array $list ) {
-		update_option( self::OPTION, array_slice( array_values( $list ), 0, self::MAX ), true );
+		$list = array_values( $list );
+		// Over the cap, drop the oldest archived, unpinned ones; never a current or pinned one.
+		while ( count( $list ) > self::MAX ) {
+			$drop = null;
+			foreach ( $list as $i => $h ) {
+				if ( ! self::is_current( $h ) && empty( $h['pinned'] ) && ( null === $drop || self::fresh_from( $h ) < self::fresh_from( $list[ $drop ] ) ) ) {
+					$drop = $i;
+				}
+			}
+			if ( null === $drop ) {
+				break;
+			}
+			array_splice( $list, $drop, 1 );
+		}
+		update_option( self::OPTION, $list, false );
+	}
+
+	/** When a highlight's up-front time started: when it was added, or last brought back. */
+	public static function fresh_from( array $h ) {
+		return max( (int) ( $h['added'] ?? 0 ), (int) ( $h['fresh_from'] ?? 0 ) );
+	}
+
+	/** Unix time it moves to the archive (0 = pinned, never). */
+	public static function expires( array $h ) {
+		return ! empty( $h['pinned'] ) ? 0 : self::fresh_from( $h ) + self::FRESH_DAYS * DAY_IN_SECONDS;
+	}
+
+	public static function is_current( array $h ) {
+		return empty( $h['archived'] ) && ( ! empty( $h['pinned'] ) || time() < self::expires( $h ) );
+	}
+
+	/** What the page shows up front, in the curator's order (never empty if any exist). */
+	public static function current() {
+		$all = self::all();
+		$cur = array_values( array_filter( $all, [ __CLASS__, 'is_current' ] ) );
+		return $cur ?: array_slice( $all, 0, 1 );
+	}
+
+	/** Everything not shown up front, newest first: for "See all highlights". */
+	public static function archive( array $shown ) {
+		$ids  = array_column( $shown, 'id' );
+		$rest = array_values( array_filter( self::all(), static fn( $h ) => ! in_array( $h['id'], $ids, true ) ) );
+		usort( $rest, static fn( $a, $b ) => self::fresh_from( $b ) <=> self::fresh_from( $a ) );
+		return $rest;
+	}
+
+	/** Pin / unpin, archive now, or bring back (up front again for FRESH_DAYS). */
+	public static function set_state( $id, $state ) {
+		$list = self::all();
+		foreach ( $list as &$h ) {
+			if ( $h['id'] !== $id ) {
+				continue;
+			}
+			if ( 'pin' === $state ) {
+				$h['pinned'] = true;
+				unset( $h['archived'] );
+			} elseif ( 'unpin' === $state ) {
+				unset( $h['pinned'] );
+			} elseif ( 'archive' === $state ) {
+				$h['archived'] = true;
+				unset( $h['pinned'] );
+			} elseif ( 'restore' === $state ) {
+				unset( $h['archived'] );
+				$h['fresh_from'] = time();
+			}
+		}
+		unset( $h );
+		self::save( $list );
 	}
 
 	public static function is_video_id( $id ) {
@@ -153,6 +226,25 @@ final class CN_Highlights {
 			return new WP_Error( 'invalid', __( 'That isn\'t a link to a YouTube video.', 'channel-network' ) );
 		}
 		if ( self::is_highlighted( $id ) ) {
+			$list = self::all();
+			$i    = array_search( $id, array_column( $list, 'id' ), true );
+			if ( false !== $i && ! self::is_current( $list[ $i ] ) ) {
+				// Archived: highlighting it again brings it back up front, at the top (or bottom).
+				$item = $list[ $i ];
+				unset( $item['archived'] );
+				$item['fresh_from'] = time();
+				if ( '' !== trim( (string) ( $args['note'] ?? '' ) ) ) {
+					$item['note'] = mb_substr( trim( sanitize_text_field( (string) $args['note'] ) ), 0, 280 );
+				}
+				array_splice( $list, $i, 1 );
+				if ( 'bottom' === ( $args['position'] ?? 'top' ) ) {
+					$list[] = $item;
+				} else {
+					array_unshift( $list, $item );
+				}
+				self::save( $list );
+				return $item;
+			}
 			return new WP_Error( 'duplicate', __( 'That video is already highlighted.', 'channel-network' ) );
 		}
 		$meta  = self::lookup( $id );
@@ -336,13 +428,14 @@ final class CN_Highlights {
 	 * Approve highlight suggestions: add each video (newest approval on top) and mark the
 	 * suggestion 'added'. Returns how many were added.
 	 */
-	public static function approve( array $suggestion_ids ) {
+	public static function approve( array $suggestion_ids, array $args = [] ) {
 		$n = 0;
 		foreach ( CN_Suggestions::get_many( $suggestion_ids ) as $s ) {
 			if ( self::KIND !== $s->kind ) {
 				continue;
 			}
-			$r = self::add( $s->channel_input, [ 'title' => $s->title ] );
+			// $args (from Quick approve): note, position, and a title that overrides the suggested one.
+			$r = self::add( $s->channel_input, [ 'title' => '' !== trim( (string) ( $args['title'] ?? '' ) ) ? $args['title'] : $s->title ] + $args );
 			if ( ! is_wp_error( $r ) || 'duplicate' === $r->get_error_code() ) {
 				CN_Suggestions::set_status( [ (int) $s->id ], 'added' );
 				$n += is_wp_error( $r ) ? 0 : 1;

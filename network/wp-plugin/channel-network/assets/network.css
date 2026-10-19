@@ -688,3 +688,10 @@ body.admin-bar .cn-top { top: 32px; }
 
 /* ---------- Highlight feature card: square corners to match the thumbnails (1.6.4, Keith 2026-10-18) ---------- */
 .cn-highlights .cn-card.cn-hl-feature { border-radius: 0; }
+
+/* ---------- Highlights archive: "See all highlights" (1.6.5) ---------- */
+.cn-hl-all-row { margin: clamp(16px, 2vw, 22px) 0 0; display: flex; justify-content: center; }
+.cn-hl-archive { margin-top: clamp(18px, 2.4vw, 26px); padding-top: clamp(18px, 2.4vw, 26px); border-top: 1px solid var(--cn-line); }
+.cn-hl-archive-h { margin: 0 0 14px; font-size: 15px; font-weight: 700; letter-spacing: .02em; color: var(--cn-ink-2); }
+.cn-hl-archive .cn-hl-grid { margin-top: 0; }
+.cn-hl-when { color: var(--cn-muted); }
