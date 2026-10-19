@@ -15,6 +15,7 @@
 	--cn-ink-2: #2b313b;
 	--cn-muted: #5f6774;
 	--cn-line: #e2e5ea;
+	--cn-thumb-line: #c4c9d1; /* thumbnail border (1.6.3) */
 	--cn-chip: #eceef2;
 	--cn-chip-hover: #e2e5ea;
 	--cn-accent: #046937; /* Deprogrammer Project logo green (dark stop) */
@@ -43,6 +44,7 @@
 		--cn-ink-2: #cdd2d9;
 		--cn-muted: #9099a6;
 		--cn-line: #242932;
+		--cn-thumb-line: #3a414d;
 		--cn-chip: #1a1e25;
 		--cn-chip-hover: #232832;
 		--cn-accent: #4db748; /* logo green (light stop) */
@@ -65,6 +67,7 @@
 	--cn-ink-2: #cdd2d9;
 	--cn-muted: #9099a6;
 	--cn-line: #242932;
+	--cn-thumb-line: #3a414d;
 	--cn-chip: #1a1e25;
 	--cn-chip-hover: #232832;
 	--cn-accent: #4db748; /* logo green (light stop) */
@@ -673,3 +676,12 @@ body.admin-bar .cn-top { top: 32px; }
 /* "Suggest anonymously" on the highlight form (1.6.2): the member's choice, off by default */
 .cn-hl-anon { margin: 2px 0 14px; }
 .cn-hl-anon-hint { display: block; color: var(--cn-muted); font-size: 12.5px; }
+
+/* ---------- Thumbnails: square corners + thin solid border (1.6.3, Keith 2026-10-18) ----------
+   Same selectors as the rounded rules above, placed last so they win at every breakpoint. */
+.cn-thumb,
+.cn-card.is-lead .cn-thumb,
+.cn-card:not(.is-lead) .cn-thumb,
+.cn-compact .cn-feed:not(.cn-rail-section) .cn-thumb,
+.cn-highlights .cn-card.cn-hl-feature .cn-thumb,
+.cn-saved-link img { border-radius: 0; border: 1px solid var(--cn-thumb-line); }
