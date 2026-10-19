@@ -685,3 +685,6 @@ body.admin-bar .cn-top { top: 32px; }
 .cn-compact .cn-feed:not(.cn-rail-section) .cn-thumb,
 .cn-highlights .cn-card.cn-hl-feature .cn-thumb,
 .cn-saved-link img { border-radius: 0; border: 1px solid var(--cn-thumb-line); }
+
+/* ---------- Highlight feature card: square corners to match the thumbnails (1.6.4, Keith 2026-10-18) ---------- */
+.cn-highlights .cn-card.cn-hl-feature { border-radius: 0; }
