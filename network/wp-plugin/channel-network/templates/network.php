@@ -18,7 +18,8 @@ $cn_seen     = array_flip( array_column( $cn_watched['items'], 'id' ) );
 $cn_stream   = array_values( array_filter( CN_Feeds::stream(), static fn( $v ) => ! isset( $cn_seen[ $v['id'] ] ) ) );
 $cn_cache    = CN_Feeds::cache();
 $cn_latest   = CN_Feeds::latest();
-$cn_hl       = array_slice( CN_Highlights::all(), 0, CN_Highlights::SHOW );
+$cn_hl       = array_slice( CN_Highlights::current(), 0, CN_Highlights::SHOW );
+$cn_hl_more  = $cn_hl ? CN_Highlights::archive( $cn_hl ) : []; // "See all highlights", newest first
 // Sections "Edit this page" can reorder and hide (keys match CN_Members::sanitize_layout()).
 $cn_sections = [
 	'highlights' => __( 'Highlighted', 'channel-network' ),
@@ -266,6 +267,25 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 					include CN_DIR . 'templates/card.php';
 				endforeach; ?>
 			</ol>
+		<?php endif; ?>
+		<?php if ( $cn_hl_more ) :
+			/* translators: %d: number of earlier highlights */
+			$cn_hl_label = sprintf( _n( 'See all highlights (%d more)', 'See all highlights (%d more)', count( $cn_hl_more ), 'channel-network' ), count( $cn_hl_more ) );
+			?>
+			<div class="cn-hl-all">
+				<p class="cn-hl-all-row"><button type="button" class="cn-btn cn-hl-all-btn" aria-expanded="false" aria-controls="cn-hl-archive" data-label="<?php echo esc_attr( $cn_hl_label ); ?>" data-label-open="<?php esc_attr_e( 'Hide earlier highlights', 'channel-network' ); ?>"><?php echo esc_html( $cn_hl_label ); ?></button></p>
+				<div class="cn-hl-archive" id="cn-hl-archive" hidden>
+					<h3 class="cn-hl-archive-h"><?php esc_html_e( 'Earlier highlights', 'channel-network' ); ?></h3>
+					<ol class="cn-grid cn-hl-grid cn-hl-archive-grid">
+						<?php foreach ( $cn_hl_more as $cn_i => $h ) :
+							$cn_card              = CN_Highlights::card( $h, 100 + $cn_i ); // lazy images
+							$cn_card['time_html'] = '<span class="cn-hl-when">' . esc_html( sprintf( /* translators: %s: date */ __( 'Highlighted %s', 'channel-network' ), wp_date( 'M j', CN_Highlights::fresh_from( $h ) ) ) ) . '</span>';
+							include CN_DIR . 'templates/card.php';
+						endforeach; ?>
+					</ol>
+					<p class="cn-more-row cn-hl-more-row" hidden><button type="button" class="cn-btn cn-hl-more"><?php esc_html_e( 'Show more', 'channel-network' ); ?></button></p>
+				</div>
+			</div>
 		<?php endif; ?>
 	</section>
 	<?php endif; ?>

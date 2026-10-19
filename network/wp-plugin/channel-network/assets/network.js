@@ -780,4 +780,31 @@
 			if (!new URL(window.location.href).searchParams.get('cat') && layout.cat !== 'all') setFilter(layout.cat, false);
 		} catch (e) { /* ignore */ }
 	}
+	/* ---- Highlights: "See all highlights" expands the archive in place, 12 at a time (1.6.4) ---- */
+	(function () {
+		var btn = document.querySelector('.cn-hl-all-btn');
+		if (!btn) return;
+		var box = document.getElementById(btn.getAttribute('aria-controls'));
+		var items = Array.prototype.slice.call(box.querySelectorAll('.cn-hl-archive-grid > li'));
+		var moreRow = box.querySelector('.cn-hl-more-row');
+		var size = 12, shown = size;
+		function paint() {
+			items.forEach(function (li, i) { li.hidden = i >= shown; });
+			moreRow.hidden = shown >= items.length;
+		}
+		btn.addEventListener('click', function () {
+			var open = box.hidden;
+			box.hidden = !open;
+			btn.setAttribute('aria-expanded', String(open));
+			btn.textContent = open ? btn.getAttribute('data-label-open') : btn.getAttribute('data-label');
+			if (open) { paint(); track('highlights_archive', { count: items.length }); }
+		});
+		moreRow.querySelector('button').addEventListener('click', function () {
+			var next = items[shown];
+			shown += size;
+			paint();
+			var a = next && next.querySelector('.cn-card-title a');
+			if (a) a.focus();
+		});
+	})();
 })();

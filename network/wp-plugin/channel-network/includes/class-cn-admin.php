@@ -217,7 +217,7 @@ final class CN_Admin {
 			self::render_hl_queue( $waiting ); // new suggestions first, so they can't be missed
 		}
 		echo '<h2' . ( $waiting ? ' style="margin-top:32px"' : '' ) . '>Highlighted on the page</h2>';
-		printf( '<p class="description">The first one is shown large at the top of the page; up to %d are shown. Members can suggest videos below; nothing appears until you approve it.</p>', (int) CN_Highlights::SHOW );
+		printf( '<p class="description">Up to %1$d are shown up front; the first is the large feature. Each stays up front for %2$d days, then moves to the archive by itself (visitors see it under "See all highlights"). <strong>Pin</strong> keeps one up front; <strong>Archive now</strong> moves one early; <strong>Bring back</strong> puts an archived one up front for another %2$d days. Nothing is deleted unless you remove it.</p>', (int) CN_Highlights::SHOW, (int) CN_Highlights::FRESH_DAYS );
 
 		// Add a video.
 		echo '<form method="post" action="' . $post . '" style="margin:12px 0 20px;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;max-width:900px">';
@@ -236,14 +236,27 @@ final class CN_Admin {
 			echo '<form method="post" action="' . $post . '">';
 			wp_nonce_field( 'cn_highlight_action' );
 			echo '<input type="hidden" name="action" value="cn_highlight_action">';
-			echo '<table class="widefat striped" style="max-width:1100px"><thead><tr><th style="width:2em">#</th><th style="width:130px">Video</th><th>Title</th><th>Note</th><th>Added</th><th style="width:170px">Order</th></tr></thead><tbody>';
-			$last = count( $list ) - 1;
+			echo '<table class="widefat striped" style="max-width:1100px"><thead><tr><th style="width:2em">#</th><th style="width:130px">Video</th><th>Title</th><th>Note</th><th>Added</th><th>On the page</th><th style="width:170px">Order</th></tr></thead><tbody>';
+			$last  = count( $list ) - 1;
+			$front = array_column( array_slice( CN_Highlights::current(), 0, CN_Highlights::SHOW ), 'id' );
 			foreach ( $list as $i => $h ) {
-				$c = CN_Highlights::card( $h, $i );
+				$c   = CN_Highlights::card( $h, $i );
+				$pos = array_search( $h['id'], $front, true );
+				$cur = CN_Highlights::is_current( $h );
+				if ( false !== $pos ) {
+					$state = ( 0 === $pos ? '<strong>Feature</strong>' : 'Up front' ) . ( ! empty( $h['pinned'] ) ? ' · pinned' : ( $cur ? ' · until ' . esc_html( wp_date( 'M j', CN_Highlights::expires( $h ) ) ) : ' · <span class="description">shown because nothing else is up front</span>' ) );
+				} elseif ( $cur ) {
+					$state = '<span class="description">Up front, but more than ' . (int) CN_Highlights::SHOW . ' are: waiting for room</span>';
+				} else {
+					$state = '<span class="description">Archived' . ( ! empty( $h['archived'] ) ? ' (by you)' : ' ' . esc_html( wp_date( 'M j', CN_Highlights::expires( $h ) ) ) ) . '</span>';
+				}
+				$state .= '<br>' . ( $cur
+					? ( ! empty( $h['pinned'] ) ? '<button class="button-link" name="op" value="unpin|' . esc_attr( $h['id'] ) . '">Unpin</button>' : '<button class="button-link" name="op" value="pin|' . esc_attr( $h['id'] ) . '">Pin</button>' ) . ' | <button class="button-link" name="op" value="archive|' . esc_attr( $h['id'] ) . '">Archive now</button>'
+					: '<button class="button-link" name="op" value="restore|' . esc_attr( $h['id'] ) . '">Bring back</button> | <button class="button-link" name="op" value="pin|' . esc_attr( $h['id'] ) . '">Pin</button>' );
 				printf(
-					'<tr><td>%1$d%2$s</td><td><a href="%3$s" target="_blank" rel="noopener"><img src="https://i.ytimg.com/vi/%4$s/mqdefault.jpg" width="120" height="68" alt="" style="display:block;border-radius:4px"></a></td><td><a href="%3$s" target="_blank" rel="noopener"><strong>%5$s</strong></a><br><span class="description">%6$s%7$s</span></td><td><input type="text" class="regular-text" name="notes[%4$s]" value="%8$s" maxlength="280"></td><td>%9$s</td><td>%10$s %11$s <button class="button-link-delete" name="op" value="remove|%4$s" onclick="return confirm(\'Remove this highlight?\')">Remove</button></td></tr>',
+					'<tr><td>%1$d%2$s</td><td><a href="%3$s" target="_blank" rel="noopener"><img src="https://i.ytimg.com/vi/%4$s/mqdefault.jpg" width="120" height="68" alt="" style="display:block;border-radius:4px"></a></td><td><a href="%3$s" target="_blank" rel="noopener"><strong>%5$s</strong></a><br><span class="description">%6$s%7$s</span></td><td><input type="text" class="regular-text" name="notes[%4$s]" value="%8$s" maxlength="280"></td><td>%9$s</td><td>%12$s</td><td>%10$s %11$s <button class="button-link-delete" name="op" value="remove|%4$s" onclick="return confirm(\'Remove this highlight?\')">Remove</button></td></tr>',
 					(int) $i + 1,
-					0 === $i ? '<br><span class="description">feature</span>' : ( $i >= CN_Highlights::SHOW ? '<br><span class="description">not shown</span>' : '' ),
+					'',
 					esc_url( CN_Highlights::watch_url( $h['id'] ) ),
 					esc_attr( $h['id'] ),
 					esc_html( $h['title'] ),
@@ -252,7 +265,8 @@ final class CN_Admin {
 					esc_attr( $h['note'] ?? '' ),
 					esc_html( wp_date( 'M j, Y', (int) ( $h['added'] ?? 0 ) ) ),
 					$i > 0 ? '<button class="button button-small" name="op" value="up|' . esc_attr( $h['id'] ) . '" aria-label="Move up">↑</button>' : '',
-					$i < $last ? '<button class="button button-small" name="op" value="down|' . esc_attr( $h['id'] ) . '" aria-label="Move down">↓</button>' : ''
+					$i < $last ? '<button class="button button-small" name="op" value="down|' . esc_attr( $h['id'] ) . '" aria-label="Move down">↓</button>' : '',
+					$state // escaped above
 				);
 			}
 			echo '</tbody></table><p><button class="button" name="op" value="notes">Save notes</button></p></form>';
@@ -372,6 +386,9 @@ final class CN_Admin {
 			) : 0;
 			$msg            = $n ? 'Highlighted. It\'s on the page now.' : 'Not added: that video is already highlighted or YouTube didn\'t return it.';
 			$args['status'] = sanitize_key( $_POST['return_status'] ?? 'new' );
+		} elseif ( in_array( $verb, [ 'pin', 'unpin', 'archive', 'restore' ], true ) ) {
+			CN_Highlights::set_state( $id, $verb );
+			$msg = [ 'pin' => 'Pinned: it stays up front until you unpin it.', 'unpin' => 'Unpinned: it moves to the archive when its time is up.', 'archive' => 'Moved to the archive.', 'restore' => 'Brought back up front.' ][ $verb ];
 		} elseif ( 'notes' === $verb ) {
 			CN_Highlights::set_notes( array_map( static fn( $v ) => (string) wp_unslash( $v ), (array) ( $_POST['notes'] ?? [] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized inside.
 			$msg = 'Notes saved.';
