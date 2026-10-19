@@ -336,13 +336,14 @@ final class CN_Highlights {
 	 * Approve highlight suggestions: add each video (newest approval on top) and mark the
 	 * suggestion 'added'. Returns how many were added.
 	 */
-	public static function approve( array $suggestion_ids ) {
+	public static function approve( array $suggestion_ids, array $args = [] ) {
 		$n = 0;
 		foreach ( CN_Suggestions::get_many( $suggestion_ids ) as $s ) {
 			if ( self::KIND !== $s->kind ) {
 				continue;
 			}
-			$r = self::add( $s->channel_input, [ 'title' => $s->title ] );
+			// $args (from Quick approve): note, position, and a title that overrides the suggested one.
+			$r = self::add( $s->channel_input, [ 'title' => '' !== trim( (string) ( $args['title'] ?? '' ) ) ? $args['title'] : $s->title ] + $args );
 			if ( ! is_wp_error( $r ) || 'duplicate' === $r->get_error_code() ) {
 				CN_Suggestions::set_status( [ (int) $s->id ], 'added' );
 				$n += is_wp_error( $r ) ? 0 : 1;
