@@ -18,7 +18,7 @@
  * - Members may tick "Suggest anonymously" (their choice, off by default). The row then stores no
  *   user id, IP hash or browser string, and the admin queue shows "Anonymous". The hourly rate
  *   limit still counts the member, in a hashed transient that expires and isn't tied to the row.
- * - As they accumulate (1.6.4): a highlight is "up front" for FRESH_DAYS after it was added (or
+ * - As they accumulate (1.6.5): a highlight is "up front" for FRESH_DAYS after it was added (or
  *   brought back), then moves to the archive by itself. A pinned one stays up front until
  *   unpinned; "Archive now" moves one early. Nothing is deleted by aging: the page shows up to
  *   SHOW up-front highlights, and "See all highlights" expands every other one in place, newest

@@ -780,7 +780,7 @@
 			if (!new URL(window.location.href).searchParams.get('cat') && layout.cat !== 'all') setFilter(layout.cat, false);
 		} catch (e) { /* ignore */ }
 	}
-	/* ---- Highlights: "See all highlights" expands the archive in place, 12 at a time (1.6.4) ---- */
+	/* ---- Highlights: "See all highlights" expands the archive in place, 12 at a time (1.6.5) ---- */
 	(function () {
 		var btn = document.querySelector('.cn-hl-all-btn');
 		if (!btn) return;

@@ -7,7 +7,7 @@
  * members' highlight suggestions queue), Suggestions (channel review queue), Feeds
  * (per-channel health, refresh now), Settings (source, API key, stream options).
  *
- * Both suggestion queues have WordPress-style row actions (1.6.4): hover links under each row
+ * Both suggestion queues have WordPress-style row actions (1.6.5): hover links under each row
  * (Approve / Quick approve / Reject / Spam / Delete for videos; Mark added / Reject / Duplicate /
  * Spam / Delete for channels), so one suggestion is handled in one click. Quick approve opens an
  * inline row, like Quick Edit, to set the note, title and position before the video goes live.
