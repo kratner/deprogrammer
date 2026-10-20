@@ -36,14 +36,18 @@ final class CN_Admin {
 		}
 		return 'highlight' === $kind
 			? [ 'Approve' => 'approve', 'Reject' => 'rejected', 'Spam' => 'spam', 'Delete' => 'delete' ]
-			: [ 'Mark added' => 'added', 'Reject' => 'rejected', 'Duplicate' => 'duplicate', 'Spam' => 'spam', 'Delete' => 'delete' ];
+			: [ 'Add to lineup' => 'lineup', 'Reject' => 'rejected', 'Duplicate' => 'duplicate', 'Spam' => 'spam', 'Delete' => 'delete' ];
 	}
 
 	/** The hover links under a suggestion row (only the ones that change its status). */
 	private static function row_actions( $kind, $r, $status ) {
 		$links = [];
 		foreach ( self::row_ops( $kind ) as $label => $op ) {
-			if ( $op === $r->status || ( 'approve' === $op && 'added' === $r->status ) ) {
+			if ( $op === $r->status || ( ( 'approve' === $op || 'lineup' === $op ) && 'added' === $r->status ) ) {
+				continue;
+			}
+			if ( 'lineup' === $op ) { // opens the inline "Add to lineup" panel (no GET action)
+				$links[] = sprintf( '<span class="cn-approve"><button type="button" class="button-link cn-qa-toggle" aria-expanded="false" aria-controls="cn-la-%1$d">%2$s</button></span>', (int) $r->id, esc_html( $label ) );
 				continue;
 			}
 			$url = wp_nonce_url(
@@ -69,7 +73,7 @@ final class CN_Admin {
 		$op   = sanitize_key( $_GET['op'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification
 		$id   = absint( $_GET['id'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification
 		check_admin_referer( 'cn_row_' . $op . '_' . $id );
-		if ( ! $id || ! in_array( $op, self::row_ops( $kind ), true ) ) {
+		if ( ! $id || 'lineup' === $op || ! in_array( $op, self::row_ops( $kind ), true ) ) {
 			wp_die( 'Unknown action', 400 );
 		}
 		if ( 'approve' === $op ) {
@@ -175,10 +179,12 @@ final class CN_Admin {
 		}
 		echo implode( ' | </li>', $links ) . '</li></ul><br class="clear">'; // phpcs:ignore WordPress.Security.EscapeOutput
 
-		echo '<p class="description">Approve a suggestion by adding the channel to <code>channels.json</code> in the repo (<code>node scripts/channels.mjs add …</code>), deploy, then mark it <em>Added</em> here.</p>';
+		echo '<p class="description"><strong>Add to lineup</strong> (hover a suggestion) looks the channel up on YouTube and puts it on the page right away: in the lineup, its category filter and the feeds. You can also add any channel yourself below.</p>';
+		self::render_lineup_add_box();
 
 		if ( ! $rows ) {
 			echo '<p>No suggestions here.</p>';
+			self::render_lineup_added();
 			return;
 		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
@@ -193,7 +199,7 @@ final class CN_Admin {
 				'<tr><th class="check-column"><input class="cn-cb" type="checkbox" name="ids[]" value="%d"></th><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s%s</td></tr>',
 				(int) $r->id,
 				esc_html( get_date_from_gmt( $r->created_at, 'M j, Y g:i a' ) ),
-				( $href ? '<a href="' . esc_url( $href ) . '" target="_blank" rel="noopener">' . esc_html( $r->channel_input ) . '</a>' : esc_html( $r->channel_input ) ) . self::row_actions( 'channel', $r, $status ),
+				( $href ? '<a href="' . esc_url( $href ) . '" target="_blank" rel="noopener">' . esc_html( $r->channel_input ) . '</a>' : esc_html( $r->channel_input ) ) . self::row_actions( 'channel', $r, $status ) . ( 'added' !== $r->status ? self::lineup_panel( $r ) : '' ),
 				(int) $r->times,
 				esc_html( $cats[ $r->category ] ?? '' ),
 				esc_html( $r->reason ),
@@ -203,6 +209,8 @@ final class CN_Admin {
 			);
 		}
 		echo '</tbody></table></form>';
+		self::quick_approve_assets();
+		self::render_lineup_added();
 	}
 
 	// ------------------------------------------------------------- Suggestion box tab (1.6.6)
@@ -238,11 +246,109 @@ final class CN_Admin {
 		echo '</tbody></table>';
 	}
 
+	/** Category <select> for the lineup. */
+	private static function category_select( $name, $selected = '' ) {
+		$o = '<select name="' . esc_attr( $name ) . '"><option value="">Choose a category…</option>';
+		foreach ( CN_Lineup::category_labels() as $k => $label ) {
+			$o .= sprintf( '<option value="%s"%s>%s</option>', esc_attr( $k ), selected( $selected, $k, false ), esc_html( $label ) );
+		}
+		return $o . '</select>';
+	}
+
+	/** Inline "Add to lineup" panel for one suggestion (inside the bulk form). */
+	private static function lineup_panel( $r ) {
+		$id = (int) $r->id;
+		return sprintf(
+			'<div class="cn-qa" id="cn-la-%1$d" hidden><p><label>Category<br>%2$s</label></p><p><label>Name on the page <span class="description">(optional; YouTube\'s name when empty)</span><br><input type="text" name="la[%1$d][name]" class="regular-text" maxlength="120"></label></p><p><button class="button button-primary" name="lineup_add" value="%1$d">Add to lineup</button> <button type="button" class="button cn-qa-cancel">Cancel</button></p></div>',
+			$id,
+			self::category_select( 'la[' . $id . '][category]', (string) $r->category )
+		);
+	}
+
+	private static function render_lineup_add_box() {
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin:10px 0 18px;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;max-width:900px">';
+		wp_nonce_field( 'cn_suggestion_action' );
+		echo '<input type="hidden" name="action" value="cn_suggestion_action"><input type="hidden" name="op" value="lineup_manual">';
+		echo '<p style="margin-top:0"><strong>Add a channel to the lineup</strong></p>';
+		echo '<p><label>YouTube channel <span class="description">(a channel link, @handle, or a link to any of its videos)</span><br><input type="text" name="lm_input" class="large-text" required placeholder="https://www.youtube.com/@channel"></label></p>';
+		echo '<p><label>Category<br>' . self::category_select( 'lm_category' ) . '</label> &nbsp; <label>Name on the page <span class="description">(optional)</span><br><input type="text" name="lm_name" class="regular-text" maxlength="120"></label></p>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in category_select().
+		submit_button( 'Add to lineup', 'primary', 'submit', false );
+		echo '</form>';
+	}
+
+	/** Channels added here (not in the shipped list), with Remove. */
+	private static function render_lineup_added() {
+		$added = CN_Lineup_Admin::all();
+		if ( ! $added ) {
+			return;
+		}
+		$cats = CN_Lineup::category_labels();
+		echo '<h2 style="margin-top:28px">Added from wp-admin</h2><p class="description">These are on the page now. They\'re folded into the main lineup list at the next weekly review.</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'cn_suggestion_action' );
+		echo '<input type="hidden" name="action" value="cn_suggestion_action">';
+		echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>Channel</th><th>Category</th><th>Added</th><th></th></tr></thead><tbody>';
+		foreach ( $added as $c ) {
+			printf(
+				'<tr><td><a href="%s" target="_blank" rel="noopener"><strong>%s</strong></a></td><td>%s</td><td>%s</td><td><button class="button-link-delete" name="op" value="lineup_remove|%s" onclick="return confirm(\'Take this channel off the page?\')">Remove</button></td></tr>',
+				esc_url( $c['url'] ),
+				esc_html( $c['name'] ),
+				esc_html( $cats[ $c['category'] ] ?? $c['category'] ),
+				esc_html( wp_date( 'M j, Y', (int) $c['added'] ) . ( ! empty( $c['by'] ) ? ' by ' . $c['by'] : '' ) ),
+				esc_attr( $c['channelId'] )
+			);
+		}
+		echo '</tbody></table></form>';
+	}
+
+	/** After a lineup change: fetch the new channel's videos and avatar now, not on the next cron. */
+	private static function refresh_after_lineup_change() {
+		if ( method_exists( 'CN_Feeds', 'refresh_all' ) ) {
+			CN_Feeds::refresh_all();
+		}
+	}
+
 	public static function handle_suggestion_action() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Not allowed', 403 );
 		}
 		check_admin_referer( 'cn_suggestion_action' );
+		$op = sanitize_text_field( wp_unslash( $_POST['op'] ?? '' ) );
+		$sid = absint( $_POST['lineup_add'] ?? 0 );
+		if ( $sid || 'lineup_manual' === $op || 0 === strpos( $op, 'lineup_remove|' ) ) {
+			if ( 0 === strpos( $op, 'lineup_remove|' ) ) {
+				$n   = CN_Lineup_Admin::remove( substr( $op, 14 ) );
+				$msg = $n ? 'Removed from the lineup.' : 'Nothing removed.';
+			} else {
+				if ( $sid ) {
+					$s     = CN_Suggestions::get_many( [ $sid ] )[0] ?? null;
+					$la    = (array) ( $_POST['la'][ $sid ] ?? [] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized below / in add().
+					$input = $s ? $s->channel_input : '';
+					$cat   = sanitize_key( $la['category'] ?? '' );
+					$name  = (string) wp_unslash( $la['name'] ?? '' );
+				} else {
+					$input = (string) wp_unslash( $_POST['lm_input'] ?? '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- reduced to a channel key in add().
+					$cat   = sanitize_key( $_POST['lm_category'] ?? '' );
+					$name  = (string) wp_unslash( $_POST['lm_name'] ?? '' );
+				}
+				$c = CN_Lineup_Admin::add( $input, $cat, $name, $sid );
+				if ( is_wp_error( $c ) ) {
+					$msg = 'Not added: ' . $c->get_error_message();
+					if ( $sid && 'duplicate' === $c->get_error_code() ) {
+						CN_Suggestions::set_status( [ $sid ], 'duplicate' );
+						$msg .= ' The suggestion is marked duplicate.';
+					}
+				} else {
+					if ( $sid ) {
+						CN_Suggestions::set_status( [ $sid ], 'added' );
+					}
+					self::refresh_after_lineup_change();
+					$msg = sprintf( 'Added %s to %s. It\'s on the page now.', $c['name'], CN_Lineup::category_labels()[ $c['category'] ] ?? $c['category'] );
+				}
+			}
+			wp_safe_redirect( self::url( [ 'status' => sanitize_key( $_POST['return_status'] ?? 'new' ), 'cn_msg' => rawurlencode( $msg ) ] ) );
+			exit;
+		}
 		$ids = array_map( 'absint', (array) ( $_POST['ids'] ?? [] ) );
 		$do  = sanitize_key( $_POST['do'] ?? '' );
 		$n   = 0;

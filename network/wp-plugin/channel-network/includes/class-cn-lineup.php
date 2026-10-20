@@ -22,6 +22,12 @@ final class CN_Lineup {
 		return self::$data;
 	}
 
+	/** Forget the loaded lineup (after wp-admin adds or removes a channel). */
+	public static function reset() {
+		self::$data    = null;
+		self::$watched = null;
+	}
+
 	/** @return array<int, array{key:string,label:string}> in display order. */
 	public static function categories() {
 		return self::load()['categories'] ?? [];

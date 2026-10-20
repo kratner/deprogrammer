@@ -240,4 +240,38 @@ class CN_CLI {
 		}
 		WP_CLI::success( sprintf( 'Created draft page #%d. Preview: %s', $id, get_preview_post_link( $id ) ) );
 	}
+
+	/**
+	 * Channels added to the lineup from wp-admin (not yet in the shipped list), or add one.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [<action>]
+	 * : list (default), add or remove.
+	 *
+	 * [<input>]
+	 * : For add: a channel link, @handle or video link. For remove: the UC… channel id.
+	 *
+	 * [--category=<key>]
+	 * : For add: the category key.
+	 *
+	 * [--format=<format>]
+	 * : table or json (json is what gets folded into the private channels.json).
+	 *
+	 * @subcommand lineup-added
+	 */
+	public function lineup_added( $args, $assoc ) {
+		$action = $args[0] ?? 'list';
+		if ( 'add' === $action ) {
+			$c = CN_Lineup_Admin::add( $args[1] ?? '', $assoc['category'] ?? '' );
+			is_wp_error( $c ) ? WP_CLI::error( $c->get_error_message() ) : WP_CLI::success( sprintf( 'Added %s (%s) to %s.', $c['name'], $c['channelId'], $c['category'] ) );
+			return;
+		}
+		if ( 'remove' === $action ) {
+			CN_Lineup_Admin::remove( $args[1] ?? '' ) ? WP_CLI::success( 'Removed.' ) : WP_CLI::warning( 'Nothing removed.' );
+			return;
+		}
+		$rows = array_map( static fn( $c ) => [ 'name' => $c['name'], 'channelId' => $c['channelId'], 'url' => $c['url'], 'category' => $c['category'], 'added' => gmdate( 'Y-m-d', (int) $c['added'] ) ], CN_Lineup_Admin::all() );
+		WP_CLI\Utils\format_items( $assoc['format'] ?? 'table', $rows, [ 'name', 'channelId', 'url', 'category', 'added' ] );
+	}
 }
