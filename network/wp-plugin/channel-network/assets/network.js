@@ -268,7 +268,7 @@
 	});
 
 	/* ---- Suggestion form ---- */
-	var form = document.querySelector('.cn-form');
+	var form = document.querySelector('.cn-form:not(.cn-feedback-form)');
 	if (form && window.fetch && window.CN) {
 		var status = form.querySelector('.cn-form-status');
 		var button = form.querySelector('button[type="submit"]');
@@ -305,6 +305,35 @@
 				})
 				.catch(function () { track('suggest_channel', { result: 'network_error' }); show('Couldn’t reach the server. Please try again.', false); })
 				.then(function () { button.disabled = false; });
+		});
+	}
+
+	/* ---- Suggestion box (1.6.6): one short message, anyone ---- */
+	var fbForm = document.querySelector('.cn-feedback-form');
+	if (fbForm && window.fetch && window.CN && window.CN.feedbackUrl) {
+		var fbMsg = fbForm.querySelector('#cn-fb-message');
+		var fbCount = fbForm.querySelector('.cn-fb-count');
+		var fbStatus = fbForm.querySelector('.cn-form-status');
+		var fbBtn = fbForm.querySelector('button[type="submit"]');
+		var fbMax = parseInt(fbMsg.getAttribute('maxlength'), 10) || 280;
+		var fbShow = function (msg, ok) { fbStatus.textContent = msg; fbStatus.className = 'cn-form-status ' + (ok ? 'is-ok' : 'is-error'); };
+		var fbLeft = function () { fbCount.textContent = (fbMax - fbMsg.value.length) + ' characters left'; };
+		fbMsg.addEventListener('input', fbLeft);
+		fbForm.addEventListener('submit', function (e) {
+			e.preventDefault();
+			fbMsg.removeAttribute('aria-invalid');
+			if (!fbMsg.value.trim()) { fbMsg.setAttribute('aria-invalid', 'true'); fbMsg.focus(); fbShow('Please write a suggestion first.', false); return; }
+			fbBtn.disabled = true;
+			fbShow('Sending…', true);
+			fetch(window.CN.feedbackUrl, { method: 'POST', body: new FormData(fbForm), credentials: 'same-origin' })
+				.then(function (r) { return r.json().catch(function () { return { ok: false, message: 'Something went wrong. Please try again.' }; }); })
+				.then(function (j) {
+					track('suggestion_box', { result: j.status || (j.ok ? 'queued' : 'error') });
+					fbShow(j.message || (j.ok ? 'Thanks!' : 'Something went wrong. Please try again.'), !!j.ok);
+					if (j.ok) { fbMsg.value = ''; fbLeft(); } else if (j.field === 'message') { fbMsg.setAttribute('aria-invalid', 'true'); fbMsg.focus(); }
+				})
+				.catch(function () { track('suggestion_box', { result: 'network_error' }); fbShow('Couldn’t reach the server. Please try again.', false); })
+				.then(function () { fbBtn.disabled = false; });
 		});
 	}
 

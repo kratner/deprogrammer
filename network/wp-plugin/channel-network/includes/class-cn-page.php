@@ -71,6 +71,7 @@ final class CN_Page {
 			'CN',
 			[
 				'suggestUrl' => esc_url_raw( rest_url( 'channel-network/v1/suggest' ) ),
+				'feedbackUrl' => esc_url_raw( rest_url( 'channel-network/v1/feedback' ) ),
 				'rest'       => esc_url_raw( rest_url( 'channel-network/v1/' ) ),
 				'members'    => CN_Members::enabled(),
 				'clientId'   => CN_Members::google_client_id(),

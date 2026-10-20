@@ -31,6 +31,9 @@ final class CN_Admin {
 
 	/** Row-action ops per queue, as label => op. */
 	private static function row_ops( $kind ) {
+		if ( 'feedback' === $kind ) {
+			return [ 'Done' => 'added', 'Spam' => 'spam', 'Delete' => 'delete' ]; // 'added' is shown as "done" here
+		}
 		return 'highlight' === $kind
 			? [ 'Approve' => 'approve', 'Reject' => 'rejected', 'Spam' => 'spam', 'Delete' => 'delete' ]
 			: [ 'Mark added' => 'added', 'Reject' => 'rejected', 'Duplicate' => 'duplicate', 'Spam' => 'spam', 'Delete' => 'delete' ];
@@ -62,7 +65,7 @@ final class CN_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Not allowed', 403 );
 		}
-		$kind = 'highlight' === ( $_GET['kind'] ?? '' ) ? 'highlight' : 'channel'; // phpcs:ignore WordPress.Security.NonceVerification -- verified below.
+		$kind = in_array( $_GET['kind'] ?? '', [ 'highlight', 'feedback' ], true ) ? sanitize_key( $_GET['kind'] ) : 'channel'; // phpcs:ignore WordPress.Security.NonceVerification -- verified below.
 		$op   = sanitize_key( $_GET['op'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification
 		$id   = absint( $_GET['id'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification
 		check_admin_referer( 'cn_row_' . $op . '_' . $id );
@@ -75,18 +78,20 @@ final class CN_Admin {
 			$msg = CN_Suggestions::delete( [ $id ] ) ? 'Suggestion deleted.' : 'Nothing deleted.';
 		} else {
 			CN_Suggestions::set_status( [ $id ], $op );
-			$msg = [ 'added' => 'Marked added.', 'rejected' => 'Rejected.', 'duplicate' => 'Marked duplicate.', 'spam' => 'Marked spam.' ][ $op ] ?? 'Updated.';
+			$msg = [ 'added' => 'feedback' === $kind ? 'Marked done.' : 'Marked added.', 'rejected' => 'Rejected.', 'duplicate' => 'Marked duplicate.', 'spam' => 'Marked spam.' ][ $op ] ?? 'Updated.';
 		}
 		$args = [ 'status' => sanitize_key( $_GET['return_status'] ?? 'new' ), 'cn_msg' => rawurlencode( $msg ) ]; // phpcs:ignore WordPress.Security.NonceVerification
 		if ( 'highlight' === $kind ) {
 			$args['tab'] = 'highlights';
+		} elseif ( 'feedback' === $kind ) {
+			$args['tab'] = 'feedback';
 		}
 		wp_safe_redirect( self::url( $args ) );
 		exit;
 	}
 
 	public static function menu() {
-		$new   = CN_Suggestions::counts()['new'] + CN_Suggestions::counts( CN_Highlights::KIND )['new'];
+		$new   = CN_Suggestions::counts()['new'] + CN_Suggestions::counts( CN_Highlights::KIND )['new'] + CN_Suggestions::counts( 'feedback' )['new'];
 		$badge = $new ? ' <span class="awaiting-mod">' . (int) $new . '</span>' : '';
 		add_menu_page( 'Channel Network', 'Channel Network' . $badge, 'manage_options', self::SLUG, [ __CLASS__, 'render' ], 'dashicons-video-alt3', 26 );
 	}
@@ -105,7 +110,15 @@ final class CN_Admin {
 		}
 		$tab  = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'suggestions'; // phpcs:ignore WordPress.Security.NonceVerification
 		$hl_new = CN_Suggestions::counts( CN_Highlights::KIND )['new'];
-		$tabs = [ 'highlights' => 'Highlights' . ( $hl_new ? " ($hl_new new)" : '' ), 'suggestions' => 'Channel suggestions', 'feeds' => 'Feeds', 'settings' => 'Settings' ];
+		$ch_new = CN_Suggestions::counts()['new'];
+		$fb_new = CN_Suggestions::counts( 'feedback' )['new'];
+		$tabs   = [
+			'highlights'  => 'Highlights' . ( $hl_new ? " ($hl_new new)" : '' ),
+			'suggestions' => 'Channel suggestions' . ( $ch_new ? " ($ch_new new)" : '' ),
+			'feedback'    => 'Suggestion box' . ( $fb_new ? " ($fb_new new)" : '' ),
+			'feeds'       => 'Feeds',
+			'settings'    => 'Settings',
+		];
 		echo '<div class="wrap"><h1>Channel Network</h1>';
 		self::page_notice();
 		echo '<nav class="nav-tab-wrapper">';
@@ -118,6 +131,8 @@ final class CN_Admin {
 		}
 		if ( 'highlights' === $tab ) {
 			self::render_highlights();
+		} elseif ( 'feedback' === $tab ) {
+			self::render_feedback();
 		} elseif ( 'feeds' === $tab ) {
 			self::render_feeds();
 		} elseif ( 'settings' === $tab ) {
@@ -184,10 +199,43 @@ final class CN_Admin {
 				esc_html( $r->reason ),
 				$r->email ? '<a href="mailto:' . esc_attr( $r->email ) . '">' . esc_html( $r->email ) . '</a>' : '',
 				esc_html( $r->status ),
-				'spam' === $r->akismet ? ' <span class="description">(Akismet: spam)</span>' : ''
+				'spam' === $r->akismet && 'spam' !== $r->status ? ' <span class="description" style="color:#b32d2e">· may be spam (Akismet)</span>' : ''
 			);
 		}
 		echo '</tbody></table></form>';
+	}
+
+	// ------------------------------------------------------------- Suggestion box tab (1.6.6)
+
+	private static function render_feedback() {
+		$status = isset( $_GET['status'] ) ? sanitize_key( $_GET['status'] ) : 'new'; // phpcs:ignore WordPress.Security.NonceVerification
+		$status = in_array( $status, [ 'new', 'added', 'spam', 'all' ], true ) ? $status : 'new';
+		$counts = CN_Suggestions::counts( 'feedback' );
+		$rows   = CN_Suggestions::query( $status, 200, 'feedback' );
+		echo '<p class="description">Short notes from visitors (up to ' . (int) CN_Suggestions::BRIEF . ' characters, no sign-in). Hover a row for Done, Spam and Delete. Nothing here is shown on the page.</p>';
+		echo '<ul class="subsubsub">';
+		$links = [];
+		foreach ( [ 'new' => 'New', 'added' => 'Done', 'spam' => 'Spam', 'all' => 'All' ] as $s => $label ) {
+			$n       = 'all' === $s ? array_sum( $counts ) - $counts['spam'] : $counts[ $s ];
+			$links[] = sprintf( '<li><a href="%s"%s>%s <span class="count">(%d)</span></a>', esc_url( self::url( [ 'tab' => 'feedback', 'status' => $s ] ) ), $s === $status ? ' class="current"' : '', esc_html( $label ), (int) $n );
+		}
+		echo implode( ' | </li>', $links ) . '</li></ul><br class="clear">'; // phpcs:ignore WordPress.Security.EscapeOutput
+		if ( ! $rows ) {
+			echo '<p>' . ( 'new' === $status ? 'Nothing new in the suggestion box.' : 'Nothing here.' ) . '</p>';
+			return;
+		}
+		echo '<table class="widefat striped" style="max-width:1000px"><thead><tr><th style="width:170px">Received</th><th>Suggestion</th><th style="width:90px">Status</th></tr></thead><tbody>';
+		foreach ( $rows as $r ) {
+			printf(
+				'<tr><td>%s</td><td>%s%s%s</td><td>%s</td></tr>',
+				esc_html( get_date_from_gmt( $r->created_at, 'M j, Y g:i a' ) ),
+				nl2br( esc_html( $r->reason ) ),
+				(int) $r->times > 1 ? ' <span class="description">(sent ' . (int) $r->times . ' times)</span>' : '',
+				self::row_actions( 'feedback', $r, $status ),
+				esc_html( 'added' === $r->status ? 'done' : $r->status ) . ( 'spam' === $r->akismet && 'spam' !== $r->status ? ' <span class="description" style="color:#b32d2e">· may be spam</span>' : '' )
+			);
+		}
+		echo '</tbody></table>';
 	}
 
 	public static function handle_suggestion_action() {
@@ -325,7 +373,7 @@ final class CN_Admin {
 				esc_html( $r->reason ),
 				! empty( $r->anonymous ) ? '<span class="description">Anonymous (member\'s choice)</span>' : ( $user ? esc_html( $user->display_name . ' <' . $user->user_email . '>' ) : '<span class="description">deleted account</span>' ),
 				esc_html( 'added' === $r->status ? 'approved' : $r->status ),
-				'spam' === $r->akismet ? ' <span class="description">(Akismet: spam)</span>' : ''
+				'spam' === $r->akismet && 'spam' !== $r->status ? ' <span class="description" style="color:#b32d2e">· may be spam (Akismet)</span>' : ''
 			);
 		}
 		echo '</tbody></table></form>';

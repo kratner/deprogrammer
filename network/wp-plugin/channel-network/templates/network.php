@@ -486,21 +486,8 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 					</select>
 				</div>
 				<div class="cn-field">
-					<label for="cn-reason"><?php esc_html_e( 'Why it belongs', 'channel-network' ); ?> <span class="cn-opt"><?php esc_html_e( '(optional)', 'channel-network' ); ?></span></label>
-					<textarea id="cn-reason" name="reason" rows="3" maxlength="1000"></textarea>
-				</div>
-				<div class="cn-field">
-					<label for="cn-email"><?php esc_html_e( 'Your email', 'channel-network' ); ?> <span class="cn-opt"><?php esc_html_e( '(optional)', 'channel-network' ); ?></span></label>
-					<input id="cn-email" name="email" type="email" autocomplete="email" maxlength="190" aria-describedby="cn-email-help">
-					<p class="cn-help" id="cn-email-help">
-						<?php
-						$cn_privacy = CN_Page::privacy_url();
-						esc_html_e( 'Only used to tell you if the channel is added. Never shared or added to a mailing list.', 'channel-network' );
-						if ( $cn_privacy ) {
-							echo ' <a href="' . esc_url( $cn_privacy ) . '">' . esc_html__( 'Privacy policy', 'channel-network' ) . '</a>';
-						}
-						?>
-					</p>
+					<label for="cn-reason"><?php esc_html_e( 'Why it belongs', 'channel-network' ); ?> <span class="cn-opt"><?php esc_html_e( '(optional, a sentence or two)', 'channel-network' ); ?></span></label>
+					<textarea id="cn-reason" name="reason" rows="2" maxlength="<?php echo (int) CN_Suggestions::BRIEF; ?>"></textarea>
 				</div>
 				<div class="cn-hp" aria-hidden="true">
 					<label for="cn-website">Website</label>
@@ -510,6 +497,36 @@ $cn_intro    = trim( (string) $cn_page->post_content );
 				<p class="cn-form-actions">
 					<button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send suggestion', 'channel-network' ); ?></button>
 				</p>
+				<p class="cn-form-status" role="status" aria-live="polite"></p>
+			</form>
+		</div>
+		<?php $cn_contact = (string) apply_filters( 'cn_contact_url', 'https://substack.com/@keithratner' ); ?>
+		<div class="cn-suggest cn-feedback" id="cn-feedback">
+			<div class="cn-suggest-copy">
+				<h2 class="cn-h2" id="cn-feedback-h"><?php esc_html_e( 'Suggestion box', 'channel-network' ); ?></h2>
+				<p>
+					<?php
+					/* translators: %d: character limit */
+					echo esc_html( sprintf( __( 'An idea for this page? Keep it short, %d characters. The curator reads every one.', 'channel-network' ), CN_Suggestions::BRIEF ) );
+					if ( '' !== $cn_contact ) {
+						echo ' ' . sprintf(
+							/* translators: %s: link to the curator on Substack */
+							esc_html__( 'Want to talk? Find me on %s.', 'channel-network' ),
+							'<a href="' . esc_url( $cn_contact ) . '" target="_blank" rel="noopener">Substack</a>'
+						);
+					}
+					?>
+				</p>
+			</div>
+			<form class="cn-form cn-feedback-form" method="post" action="<?php echo esc_url( rest_url( 'channel-network/v1/feedback' ) ); ?>" novalidate aria-labelledby="cn-feedback-h">
+				<div class="cn-field">
+					<label for="cn-fb-message"><?php esc_html_e( 'Your suggestion', 'channel-network' ); ?></label>
+					<textarea id="cn-fb-message" name="message" rows="3" required maxlength="<?php echo (int) CN_Suggestions::BRIEF; ?>" aria-describedby="cn-fb-count"></textarea>
+					<p class="cn-help cn-fb-count" id="cn-fb-count" aria-live="polite"><?php echo (int) CN_Suggestions::BRIEF; ?> <?php esc_html_e( 'characters left', 'channel-network' ); ?></p>
+				</div>
+				<div class="cn-hp" aria-hidden="true"><label for="cn-fb-website">Website</label><input id="cn-fb-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+				<input type="hidden" name="token" value="<?php echo esc_attr( CN_Suggestions::form_token() ); ?>">
+				<p class="cn-form-actions"><button type="submit" class="cn-btn cn-btn-primary"><?php esc_html_e( 'Send', 'channel-network' ); ?></button></p>
 				<p class="cn-form-status" role="status" aria-live="polite"></p>
 			</form>
 		</div>

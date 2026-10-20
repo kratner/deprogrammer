@@ -24,7 +24,8 @@ defined( 'ABSPATH' ) || exit;
 final class CN_Suggestions {
 
 	const DB_VERSION = '3'; // 2: kind, user_id, title (highlight suggestions); 3: anonymous
-	const KINDS      = [ 'channel', 'highlight' ];
+	const KINDS      = [ 'channel', 'highlight', 'feedback' ]; // feedback = the suggestion box (1.6.6)
+	const BRIEF      = 280; // characters: suggestions stay short so the queue stays manageable
 	const STATUSES   = [ 'new', 'added', 'rejected', 'duplicate', 'spam' ];
 
 	public static function table() {
@@ -99,6 +100,65 @@ final class CN_Suggestions {
 				],
 			]
 		);
+		register_rest_route(
+			'channel-network/v1',
+			'/feedback',
+			[
+				'methods'             => 'POST',
+				'permission_callback' => '__return_true',
+				'callback'            => [ __CLASS__, 'handle_feedback' ],
+				'args'                => [
+					'message' => [ 'type' => 'string', 'required' => true ],
+					'website' => [ 'type' => 'string', 'default' => '' ],
+					'token'   => [ 'type' => 'string', 'default' => '' ],
+				],
+			]
+		);
+	}
+
+	/**
+	 * The suggestion box (1.6.6): anyone, no sign-in, one short message. Same defences as the
+	 * channel form (form token, honeypot, 5 per IP per hour, Akismet as a label only).
+	 */
+	public static function handle_feedback( WP_REST_Request $req ) {
+		$thanks = new WP_REST_Response( [ 'ok' => true, 'status' => 'queued', 'message' => __( 'Thanks! The curator reads every one.', 'channel-network' ) ], 200 );
+		if ( '' !== trim( (string) $req['website'] ) || ! self::token_ok( $req['token'] ) ) {
+			return $thanks; // bots: look like success, store nothing
+		}
+		$msg = trim( sanitize_textarea_field( (string) $req['message'] ) );
+		if ( '' === $msg ) {
+			return self::error( 'message', __( 'Please write a suggestion first.', 'channel-network' ) );
+		}
+		if ( mb_strlen( $msg ) > self::BRIEF ) {
+			/* translators: %d: character limit */
+			return self::error( 'message', sprintf( __( 'Please keep it under %d characters.', 'channel-network' ), self::BRIEF ) );
+		}
+		$ip_hash = self::ip_hash();
+		$rate    = 'cn_rate_fb_' . substr( $ip_hash, 0, 32 );
+		$count   = (int) get_transient( $rate );
+		if ( $count >= 5 ) {
+			return self::error( 'rate', __( 'You\'ve sent several already. Please try again in an hour.', 'channel-network' ), 429, 'rate_limited' );
+		}
+		set_transient( $rate, $count + 1, HOUR_IN_SECONDS );
+		$ua      = isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 ) : '';
+		$akismet = self::akismet_check( '', $msg, '', $ua, $req );
+		global $wpdb;
+		$wpdb->insert(
+			self::table(),
+			[
+				'kind'          => 'feedback',
+				'created_at'    => current_time( 'mysql', true ),
+				'channel_input' => '',
+				'channel_key'   => 'f:' . substr( md5( mb_strtolower( $msg ) ), 0, 16 ), // identical messages count as repeats
+				'reason'        => $msg,
+				'ip_hash'       => $ip_hash,
+				'user_agent'    => $ua,
+				'akismet'       => $akismet,
+				'status'        => 'new', // a spam verdict is a label, never a silent filter
+			],
+			[ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+		);
+		return $thanks;
 	}
 
 	/** A token the form carries: issue time + HMAC, so direct POSTs without the page fail. */
@@ -173,8 +233,9 @@ final class CN_Suggestions {
 		if ( '' !== $raw_em && ( '' === $email || ! is_email( $email ) ) ) {
 			return self::error( 'email', __( 'That email address doesn\'t look right. Leave it blank if you prefer.', 'channel-network' ) );
 		}
-		if ( mb_strlen( $reason ) > 1000 ) {
-			return self::error( 'reason', __( 'Please keep the reason under 1,000 characters.', 'channel-network' ) );
+		if ( mb_strlen( $reason ) > self::BRIEF ) {
+			/* translators: %d: character limit */
+			return self::error( 'reason', sprintf( __( 'Please keep the note under %d characters.', 'channel-network' ), self::BRIEF ) );
 		}
 		if ( '' !== $cat && ! isset( CN_Lineup::category_labels()[ $cat ] ) ) {
 			$cat = '';
@@ -217,11 +278,14 @@ final class CN_Suggestions {
 				'ip_hash'       => $ip_hash,
 				'user_agent'    => $ua,
 				'akismet'       => $akismet,
-				'status'        => 'spam' === $akismet ? 'spam' : 'new',
+				// Link-only suggestions are exactly what Akismet tends to flag, so its verdict is a
+				// label in the queue, never a silent filter (1.6.6; a real one vanished on 2026-10-20).
+				'status'        => 'new',
 			],
 			[ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
 		);
-		return $thanks;
+		/* translators: %s: what the visitor entered */
+		return new WP_REST_Response( [ 'ok' => true, 'status' => 'queued', 'message' => sprintf( __( 'Thanks! We got %s. Every suggestion is reviewed by hand.', 'channel-network' ), mb_strimwidth( $channel, 0, 80, '…' ) ) ], 200 );
 	}
 
 	private static function error( $field, $message, $status = 400, $code = 'invalid' ) {
@@ -314,7 +378,7 @@ final class CN_Suggestions {
 				'ip_hash'       => $anonymous ? '' : self::ip_hash(),
 				'user_agent'    => $anonymous ? '' : $ua,
 				'akismet'       => $akismet,
-				'status'        => 'spam' === $akismet ? 'spam' : 'new',
+				'status'        => 'new', // Akismet is a label in the queue, never a silent filter (1.6.6)
 				'anonymous'     => $anonymous ? 1 : 0,
 			],
 			[ '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' ]
