@@ -5,7 +5,7 @@
  *
  * Plugin Name:       Channel Network
  * Description:       The "Deprogramming" page: a curated network of YouTube news & politics channels with their latest videos, hand-picked highlights, plus visitor channel and member highlight suggestions.
- * Version:           1.6.6
+ * Version:           1.6.7
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Keith Ratner
@@ -20,11 +20,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CN_VERSION', '1.6.6' );
+define( 'CN_VERSION', '1.6.7' );
 define( 'CN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once CN_DIR . 'includes/class-cn-lineup.php';
+require_once CN_DIR . 'includes/class-cn-lineup-admin.php';
 require_once CN_DIR . 'includes/class-cn-settings.php';
 require_once CN_DIR . 'includes/class-cn-feeds.php';
 require_once CN_DIR . 'includes/class-cn-suggestions.php';
@@ -72,6 +73,7 @@ final class CN_Plugin {
 		add_action( self::CRON_HOOK, [ 'CN_Suggestions', 'prune_personal_data' ] );
 		add_action( 'init', [ __CLASS__, 'schedule' ] );
 
+		CN_Lineup_Admin::init(); // before anything reads the lineup
 		CN_Suggestions::init();
 		CN_Highlights::init();
 		CN_Members::init();
