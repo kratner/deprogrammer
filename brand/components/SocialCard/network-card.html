@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- FILE: network-card.html
+     PATH: brand/components/SocialCard/network-card.html
+     The link-preview image (og:image / twitter:image) for deprogrammer.org/network.
+     1200x630 (1.91:1, what Facebook, LinkedIn, Bluesky and X large cards show).
+     Render: see README.md in this folder. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Inter:wght@500;600&display=swap">
+<style>
+:root{--cinema-black:#07080a;--caption-ink:#fff;--parchment:#c2b59b;--green-deep:#046937;--green-bright:#4db748;
+  --display:"Big Shoulders Display","Arial Narrow",system-ui,sans-serif;--sans:Inter,system-ui,-apple-system,sans-serif}
+html,body{margin:0;background:var(--cinema-black)}
+.card{position:relative;width:1200px;height:630px;overflow:hidden;background:var(--cinema-black)}
+/* The logo's circle: concentric rings, the way out of the rabbit hole. Bleeds off the right. */
+.ring{position:absolute;border-radius:50%;border:10px solid var(--green-deep)}
+/* All three share one centre (1040, 315); the mark sits on cinema-black, never on brand green. */
+.r1{width:760px;height:760px;right:-220px;top:-65px}
+.r2{width:560px;height:560px;right:-120px;top:35px;border-color:var(--green-bright)}
+.r3{width:320px;height:320px;right:0;top:155px;border-width:6px}
+.mark{position:absolute;right:75px;top:230px;width:170px;height:170px}
+.text{position:absolute;left:84px;top:84px;bottom:84px;width:640px;display:flex;flex-direction:column}
+.kicker{font:600 26px/1 var(--display);letter-spacing:6px;color:var(--parchment);text-transform:uppercase}
+.head{margin-top:28px;font:800 104px/.9 var(--display);letter-spacing:.5px;color:var(--caption-ink);text-transform:uppercase}
+.sub{margin-top:28px;font:500 27px/1.35 var(--sans);color:#d9dde3;max-width:600px}
+.url{margin-top:26px;font:600 26px/1 var(--sans);color:var(--green-bright);letter-spacing:.2px}
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+  <img class="mark" src="../../assets/Logos/dp-mark-color.svg" alt="">
+  <div class="text">
+    <div class="kicker">Deprogramming</div>
+    <div class="head">The voices worth your time</div>
+    <div class="sub">Independent commentators, legal analysts and newsrooms, in one place.</div>
+    <div class="url">deprogrammer.org/network</div>
+  </div>
+</div>
+</body>
+</html>
