@@ -44,7 +44,7 @@ async () => {
 
   // Scroll until the oldest loaded section is before the cutoff, or nothing more loads.
   let last = 0, stall = 0;
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < Math.max(120, DAYS * 15); i++) { // ~1 week per 100 scrolls at heavy viewing
     const s = sections(); const d = parse(header(s[s.length - 1]));
     if (d && d < cutoff) break;
     window.scrollTo(0, document.documentElement.scrollHeight);
