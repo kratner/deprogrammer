@@ -701,3 +701,14 @@ body.admin-bar .cn-top { top: 32px; }
 /* ---------- Suggestion box (1.6.6) ---------- */
 .cn-feedback { margin-top: clamp(16px, 2.4vw, 24px); }
 .cn-fb-count { text-align: right; }
+
+/* ---------- Watch history link (1.7.0; the history view itself is history.css) ---------- */
+/* "Full history" link in the network page's Recently watched header */
+.cn-hist-link {
+	flex: none; display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 10px 0 14px;
+	font: 600 13px/1 var(--cn-sans); color: var(--cn-ink-2); text-decoration: none;
+	background: var(--cn-chip); border-radius: 999px; white-space: nowrap;
+}
+.cn-hist-link:hover { background: var(--cn-chip-hover); color: var(--cn-ink); }
+.cn-hist-link svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 599px) { .cn-hist-link { min-height: 40px; } }

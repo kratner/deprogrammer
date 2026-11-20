@@ -18,6 +18,13 @@
 //        their folded-in fan channels only, so music/off-topic never appear), most recent
 //        watch first, one entry per video. build-plugin.mjs ships it to the page's
 //        "Recently watched" section. watched.json is gitignored (personal viewing data).
+//   node scripts/channels.mjs history [--quiet]
+//        Builds history.json: the full watch-history archive behind the page's /history view.
+//        Merges every snapshot in private/reviews/ that has per-video items (plus the
+//        previous history.json, so nothing is lost if an old snapshot is deleted), keeps
+//        lineup and fan channels only, one entry per video at its most recent watch day.
+//        Re-running is safe: it rebuilds from the same inputs. Lineup changes (a channel
+//        added or excluded later) apply to the whole archive on the next run.
 //   node scripts/channels.mjs music reviews/<date>.json [--music reviews/<date>-music.json] [--apply]
 //        Finds YouTube Music listening among a snapshot's unreviewed channels and, with
 //        --apply, adds it to the excluded list so reviews never show it. Music = any of:
@@ -34,7 +41,7 @@
 // Accepted links: youtube.com/@handle, /channel/UC…, /c/…, /user/…, watch?v=…,
 // youtu.be/…, /shorts/…, a bare @handle, or a bare UC… id.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -307,6 +314,49 @@ const cmds = {
     for (const it of items) per[it.uploaderName] = (per[it.uploaderName] || 0) + 1;
     console.log(`watched.json: ${items.length} news videos watched ${sinceIso} → ${snap.to} (${skippedOther} watches from non-network channels left out).`);
     console.log('By channel: ' + Object.entries(per).sort((a, b) => b[1] - a[1]).map(([n, c]) => `${n} ${c}`).join(', '));
+  },
+
+  async history({ opt }) {
+    const d = load();
+    const { listed, excluded } = knownIds(d);
+    const dir = join(PRIVATE, 'reviews');
+    const out = join(PRIVATE, 'history.json');
+    // Sources, newest first, so a video's most recent watch day wins.
+    const snaps = readdirSync(dir).filter((f) => /^\d{4}-\d{2}-\d{2}.*\.json$/.test(f) && !/-music\.json$/.test(f))
+      .map((f) => ({ f, j: JSON.parse(readFileSync(join(dir, f), 'utf8')) }))
+      .filter((s) => Array.isArray(s.j.items) && s.j.items.length)
+      .sort((a, b) => (b.j.to || '').localeCompare(a.j.to || '') || b.f.localeCompare(a.f));
+    const prev = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null;
+    const seen = new Map();
+    let skippedOther = 0;
+    const add = (it, src) => {
+      const id = it.videoId || it.id;
+      if (!/^[\w-]{11}$/.test(id || '') || !/^\d{4}-\d{2}-\d{2}$/.test(it.day || '')) return;
+      const up = it.uploaderId || it.channelId;
+      const parent = listed.get(up);
+      if (!parent || excluded.has(up)) { skippedOther++; return; }
+      const cur = seen.get(id);
+      if (cur && cur.day >= it.day) return;
+      seen.set(id, { id, title: it.title || '', channelId: parent.channelId, uploaderId: up, uploaderName: it.channelName || it.uploaderName || parent.name, day: it.day, src });
+    };
+    for (const s of snaps) for (const it of s.j.items) add(it, s.f);
+    for (const it of prev?.items || []) add(it, it.src || 'history.json');
+    // Most recent day first; within a day keep history order (insertion order = newest snapshot first).
+    const order = new Map([...seen.keys()].map((k, i) => [k, i]));
+    const items = [...seen.values()].sort((a, b) => b.day.localeCompare(a.day) || order.get(a.id) - order.get(b.id));
+    const days = [...new Set(items.map((i) => i.day))];
+    writeFileSync(out, JSON.stringify({ updated: today(), from: days.at(-1) || null, to: days[0] || null, sources: snaps.map((s) => s.f), items }, null, 1) + '\n');
+    const before = prev?.items?.length || 0;
+    console.log(`history.json: ${items.length} videos (${items.length - before >= 0 ? '+' : ''}${items.length - before}) on ${days.length} days, ${days.at(-1)} → ${days[0]}, from ${snaps.length} snapshots (${skippedOther} non-network watches left out).`);
+    // Days inside the span with no videos: usually a gap between refreshes, worth knowing about.
+    if (!opt.quiet && days.length > 1) {
+      const have = new Set(days), gaps = [];
+      for (let t = new Date(days.at(-1) + 'T12:00:00'); t <= new Date(days[0] + 'T12:00:00'); t.setDate(t.getDate() + 1)) {
+        const iso = t.toLocaleDateString('en-CA');
+        if (!have.has(iso)) gaps.push(iso);
+      }
+      if (gaps.length) console.log(`Days with nothing in the archive (${gaps.length}): ${gaps.join(', ')}`);
+    }
   },
 
   async music({ pos, opt }) {
