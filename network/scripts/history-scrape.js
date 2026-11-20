@@ -44,13 +44,17 @@ async () => {
 
   // Scroll until the oldest loaded section is before the cutoff, or nothing more loads.
   let last = 0, stall = 0;
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < Math.max(120, DAYS * 15); i++) { // ~1 week per 100 scrolls at heavy viewing
     const s = sections(); const d = parse(header(s[s.length - 1]));
     if (d && d < cutoff) break;
-    window.scrollTo(0, document.documentElement.scrollHeight);
+    // YouTube loads the next batch when its spinner scrolls into view, sometimes only after a
+    // pause of 10s or more; when stalled, back off and re-approach so its observer fires again.
+    if (stall) { window.scrollBy(0, -1500); await new Promise((r) => setTimeout(r, 300)); }
+    const cont = document.querySelector('ytd-continuation-item-renderer');
+    if (cont) cont.scrollIntoView(); else window.scrollTo(0, document.documentElement.scrollHeight);
     await new Promise((r) => setTimeout(r, 1500));
     const n = sections().length;
-    if (n === last) { if (++stall > 4) break; } else stall = 0;
+    if (n === last) { if (++stall > 15) break; } else stall = 0; // gives up after ~30s of nothing
     last = n;
   }
 

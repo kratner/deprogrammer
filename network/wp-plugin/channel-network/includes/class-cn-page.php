@@ -44,6 +44,9 @@ final class CN_Page {
 			// script only adds weight here.
 			remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
 			remove_action( 'wp_print_styles', 'print_emoji_styles' );
+			if ( CN_History::is_view() ) {
+				return CN_DIR . 'templates/history.php';
+			}
 			CN_Feeds::maybe_queue_refresh();
 			return CN_DIR . 'templates/network.php';
 		}
@@ -62,6 +65,12 @@ final class CN_Page {
 		}
 		wp_enqueue_style( 'channel-network-inter', 'https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap', [], null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 		wp_enqueue_style( 'channel-network', CN_URL . 'assets/network.css', [ 'channel-network-inter' ], CN_VERSION );
+		if ( CN_History::is_view() ) {
+			// The history view is its own small app: no members, forms or feeds code.
+			wp_enqueue_style( 'channel-network-history', CN_URL . 'assets/history.css', [ 'channel-network' ], CN_VERSION );
+			wp_enqueue_script( 'channel-network-history', CN_URL . 'assets/history.js', [], CN_VERSION, [ 'strategy' => 'defer', 'in_footer' => true ] );
+			return;
+		}
 		if ( CN_Members::enabled() && CN_Members::google_client_id() && ! is_user_logged_in() ) {
 			wp_enqueue_script( 'google-gsi', 'https://accounts.google.com/gsi/client', [], null, [ 'strategy' => 'async', 'in_footer' => true ] ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 		}

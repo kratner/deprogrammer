@@ -38,7 +38,7 @@ if (!tabs.length) die('No youtube.com/feed/history tab open. Open one (signed in
 function evaluate(wsUrl, expression) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl);
-    ws.onopen = () => ws.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression, awaitPromise: true, returnByValue: true, timeout: 300000 } }));
+    ws.onopen = () => ws.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression, awaitPromise: true, returnByValue: true, timeout: 3600000 } }));
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.id !== 1) return;
@@ -62,7 +62,7 @@ let json = null, used = null;
 for (const t of tabs) {
   if (!(await evaluate(t.webSocketDebuggerUrl, signedIn))) continue;
   if (!forceScrape) json = await evaluate(t.webSocketDebuggerUrl, existing);
-  if (!json) { console.log(`Scraping ${days} days of history (this scrolls the tab; ~1 min)…`); json = await evaluate(t.webSocketDebuggerUrl, runScrape); }
+  if (!json) { console.log(`Scraping ${days} days of history (this scrolls the tab; about 1 min per week)…`); json = await evaluate(t.webSocketDebuggerUrl, runScrape); }
   if (json) { used = t; break; }
 }
 if (!json) die('No signed-in history tab found. Sign in as keith.ratner@gmail.com (Keith Ratner channel) and rerun.');

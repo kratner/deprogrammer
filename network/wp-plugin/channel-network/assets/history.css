@@ -1,0 +1,140 @@
+/* FILE: history.css
+   PATH: network/wp-plugin/channel-network/assets/history.css
+   The watch-history view (templates/history.php), on top of network.css. Cards reuse the
+   network page's card styles; history.js sets each row's height (--card-h), column count
+   (--cols) and gap (--gx), so what's drawn always matches its layout maths. */
+
+/* ---------- Top bar: breadcrumb + back link ---------- */
+.cn-crumb { font-size: 15px; font-weight: 650; color: var(--cn-ink-2); text-decoration: none; white-space: nowrap; }
+.cn-crumb:hover { color: var(--cn-ink); text-decoration: underline; text-underline-offset: 3px; }
+.cn-history-page .cn-title { white-space: nowrap; }
+.cn-back-link {
+	display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 14px 0 10px;
+	font: 600 13px/1 var(--cn-sans); color: var(--cn-ink-2); text-decoration: none;
+	background: var(--cn-chip); border-radius: 999px;
+}
+.cn-back-link:hover { background: var(--cn-chip-hover); color: var(--cn-ink); }
+.cn-back-link svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.cn-chip-n { margin-left: 3px; font-weight: 500; opacity: .62; font-variant-numeric: tabular-nums; }
+@media (max-width: 899px) { .cn-crumb, .cn-crumb-sep { display: none; } }
+@media (max-width: 599px) {
+	.cn-back-link { width: 40px; min-height: 40px; padding: 0; justify-content: center; }
+	.cn-back-link span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}
+
+/* ---------- The list ---------- */
+/* Room on the right for the scrubber, so it never sits on top of a card. */
+@media (hover: hover) and (pointer: fine) {
+	.cn-history-page main .cn-wrap { padding-right: max(clamp(16px, 3.5vw, 40px), 64px); }
+}
+.cn-hist { position: relative; margin-top: 6px; outline: none; contain: layout; }
+.cn-hist-day {
+	position: absolute; left: 0; right: 0;
+	display: flex; align-items: flex-end; gap: 10px; padding-bottom: 14px; box-sizing: border-box;
+}
+.cn-hist-day h2 { margin: 0; font-size: 18px; font-weight: 750; letter-spacing: -.012em; line-height: 1.2; }
+.cn-hist-count { font-size: 13px; color: var(--cn-muted); font-variant-numeric: tabular-nums; }
+.cn-hist-row {
+	position: absolute; left: 0; right: 0; height: var(--card-h);
+	list-style: none; margin: 0; padding: 0;
+	display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); column-gap: var(--gx, 20px);
+}
+.cn-hist .cn-card { height: var(--card-h); overflow: hidden; contain: content; }
+.cn-hist .cn-card-body { height: 68px; overflow: hidden; }
+.cn-hist .cn-card-meta { flex-wrap: nowrap; min-width: 0; }
+.cn-hist .cn-card-channel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cn-hist-end { margin: 28px 0 8px; font-size: 14px; color: var(--cn-muted); }
+.cn-hist-end a { color: var(--cn-ink-2); font-weight: 600; }
+
+/* Placeholders while a month loads */
+.cn-skel .cn-thumb { background: var(--cn-chip); }
+.cn-skel .cn-card-text { flex: 1; padding-top: 2px; }
+.cn-skel-line { display: block; height: 12px; width: 92%; border-radius: 6px; background: var(--cn-chip); margin: 4px 0 10px; }
+.cn-skel-line.is-short { width: 55%; }
+@media (prefers-reduced-motion: no-preference) {
+	.cn-skel .cn-thumb, .cn-skel-line { animation: cn-pulse 1.4s ease-in-out infinite; }
+	@keyframes cn-pulse { 50% { opacity: .55; } }
+}
+
+@media (max-width: 599px) {
+	.cn-hist-day h2 { font-size: 16px; }
+	.cn-hist-day { padding-bottom: 12px; }
+	.cn-hist .cn-card-body { height: auto; flex: 1; min-width: 0; }
+	.cn-hist .cn-card-title { -webkit-line-clamp: 3; }
+	.cn-skel .cn-card-body { flex: 1; }
+}
+
+/* ---------- Date scrubber (right edge) ---------- */
+.cn-scrub {
+	position: fixed; right: 0; top: var(--cn-top-h, 104px); bottom: 0; z-index: 25;
+	width: 60px; padding: 18px 0 22px; box-sizing: border-box; pointer-events: none;
+}
+.cn-scrub-track { position: relative; height: 100%; pointer-events: auto; cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.cn-scrub-track::before {
+	content: ""; position: absolute; right: 13px; top: 0; bottom: 0; width: 2px; border-radius: 2px;
+	background: var(--cn-line); opacity: 0; transition: opacity .2s;
+}
+.cn-scrub-labels span {
+	position: absolute; right: 22px; transform: translateY(-50%);
+	font: 650 11px/1 var(--cn-sans); letter-spacing: .01em; color: var(--cn-muted); white-space: nowrap;
+	background: var(--cn-bg); padding: 3px 5px; border-radius: 5px;
+	opacity: 0; transition: opacity .2s;
+}
+.cn-scrub-labels i { position: absolute; right: 12px; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--cn-muted); opacity: 0; transition: opacity .2s; }
+.cn-scrub-thumb {
+	position: absolute; right: 8px; top: 0; width: 12px; height: 28px; margin-top: -14px;
+	border-radius: 6px; background: var(--cn-accent); box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+	opacity: .5; transition: opacity .2s, width .15s, right .15s; touch-action: none; cursor: grab; will-change: transform;
+}
+.cn-scrub-thumb:focus-visible { outline-offset: 3px; opacity: 1; }
+.cn-scrub-bubble, .cn-scrub-hover span {
+	position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+	font: 650 13px/1 var(--cn-sans); white-space: nowrap; color: var(--cn-bg); background: var(--cn-ink);
+	padding: 8px 12px; border-radius: 999px; box-shadow: var(--cn-shadow);
+	opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.cn-scrub-hover { position: absolute; left: 6px; right: 6px; top: 0; height: 0; border-top: 2px solid var(--cn-accent); opacity: 0; pointer-events: none; }
+.cn-scrub-hover span { right: calc(100% + 4px); font-size: 12px; padding: 6px 10px; background: var(--cn-raised); color: var(--cn-ink); box-shadow: var(--cn-shadow), 0 0 0 1px var(--cn-line); }
+
+/* Hover, drag or keyboard: show the rail, labels and dates */
+.cn-scrub.is-hover .cn-scrub-track::before, .cn-scrub.is-drag .cn-scrub-track::before, .cn-scrub.is-key .cn-scrub-track::before,
+.cn-scrub.is-hover .cn-scrub-labels span, .cn-scrub.is-drag .cn-scrub-labels span, .cn-scrub.is-key .cn-scrub-labels span,
+.cn-scrub.is-hover .cn-scrub-labels i, .cn-scrub.is-drag .cn-scrub-labels i, .cn-scrub.is-key .cn-scrub-labels i { opacity: 1; }
+.cn-scrub.is-hover:not(.is-drag) .cn-scrub-hover, .cn-scrub.is-hover:not(.is-drag) .cn-scrub-hover span { opacity: 1; }
+.cn-scrub.is-hover .cn-scrub-thumb, .cn-scrub.is-drag .cn-scrub-thumb, .cn-scrub.is-active .cn-scrub-thumb { opacity: 1; }
+.cn-scrub.is-drag .cn-scrub-thumb { cursor: grabbing; width: 16px; right: 6px; }
+.cn-scrub.is-drag .cn-scrub-bubble, .cn-scrub.is-key .cn-scrub-bubble { opacity: 1; }
+.cn-scrub.is-drag .cn-scrub-hover { opacity: 0; }
+
+/* Touch: only the handle takes touches (the rest of the edge scrolls as normal). It appears
+   while scrolling, like the photo apps, and shows the date while dragged. */
+@media (hover: none) {
+	.cn-scrub { width: 52px; }
+	.cn-scrub-track { pointer-events: none; }
+	.cn-scrub-thumb {
+		pointer-events: auto; right: 4px; width: 30px; height: 46px; margin-top: -23px; border-radius: 23px 0 0 23px;
+		right: 0; background: var(--cn-raised); box-shadow: var(--cn-shadow), 0 0 0 1px var(--cn-line); opacity: 0;
+	}
+	.cn-scrub-thumb::before, .cn-scrub-thumb::after {
+		content: ""; position: absolute; left: 12px; width: 10px; height: 2px; border-radius: 1px; background: var(--cn-muted);
+	}
+	.cn-scrub-thumb::before { top: 19px; }
+	.cn-scrub-thumb::after { top: 25px; }
+	.cn-scrub.is-active .cn-scrub-thumb, .cn-scrub.is-drag .cn-scrub-thumb { opacity: 1; }
+	.cn-scrub.is-drag .cn-scrub-thumb { width: 34px; right: 0; }
+	.cn-scrub:not(.is-active):not(.is-drag) .cn-scrub-thumb { pointer-events: none; }
+	/* While dragging, fade the content behind the labels so they stay readable. */
+	.cn-scrub::before {
+		content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 150px; pointer-events: none;
+		background: linear-gradient(to right, transparent, var(--cn-bg) 55%); opacity: 0; transition: opacity .15s;
+	}
+	.cn-scrub.is-drag::before { opacity: 1; }
+	.cn-scrub-labels span { right: 40px; }
+	.cn-scrub-labels i { right: 20px; }
+	.cn-scrub-track::before { right: 21px; }
+	.cn-scrub-bubble { right: calc(100% + 64px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cn-scrub-track::before, .cn-scrub-labels span, .cn-scrub-labels i, .cn-scrub-thumb, .cn-scrub-bubble, .cn-scrub-hover span { transition: none; }
+}
